@@ -1,0 +1,374 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ユーザー（依頼者・ワーカー・管理者）
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String    // bcryptでハッシュ化
+  name          String
+  phone         String?
+  role          UserRole  @default(CUSTOMER)
+  status        UserStatus @default(ACTIVE)
+  
+  // 依頼者（Customer）用フィールド
+  address       String?
+  
+  // ワーカー（Worker）用フィールド
+  bio           String?   // 自己紹介
+  hourlyRate    Int?      @map("hourly_rate") // 時給（円）
+  rating        Float?    @default(0) // 平均評価（0-5）
+  reviewCount   Int       @default(0) @map("review_count")
+  approvalStatus WorkerApprovalStatus @default(PENDING) @map("approval_status")
+  
+  // 銀行口座情報（ワーカー用）
+  bankName      String?   @map("bank_name")
+  branchName    String?   @map("branch_name")
+  accountType   String?   @map("account_type") // "ordinary" | "checking"
+  accountNumber String?   @map("account_number")
+  accountName   String?   @map("account_name")
+  
+  // 本人確認書類（ワーカー用）
+  idDocumentUrl String?   @map("id_document_url")
+  
+  // リレーション
+  bookingsAsCustomer Booking[] @relation("CustomerBookings")
+  bookingsAsWorker   Booking[] @relation("WorkerBookings")
+  reviewsGiven       Review[]  @relation("Reviewer")
+  reviewsReceived    Review[]  @relation("Reviewee")
+  payments           Payment[]
+  messagesSent       Message[] @relation("Sender")
+  messagesReceived   Message[] @relation("Receiver")
+  supportTickets     SupportTicket[]
+  notifications      Notification[]
+  files               File[]
+  passwordResetToken PasswordResetToken?
+  favorites          Favorite[] @relation("UserFavorites")
+  favoritedBy        Favorite[] @relation("WorkerFavorites") // このワーカーをお気に入りに追加しているユーザー
+  creditCards        CreditCard[] // クレジットカード情報
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  @@map("users")
+}
+
+// 予約
+model Booking {
+  id            String        @id @default(uuid())
+  customerId    String        @map("customer_id")
+  workerId      String?       @map("worker_id") // ワーカー選択前はnull
+  serviceType   String        @map("service_type") // "掃除・清掃", "料理", "洗濯", "買い物代行"など
+  scheduledDate DateTime      @map("scheduled_date")
+  startTime     String        @map("start_time") // "09:00"形式
+  duration      Int           // 時間数
+  address       String
+  notes         String?       // 依頼者のメモ
+  status        BookingStatus @default(PENDING)
+  totalAmount   Int?          @map("total_amount") // 合計金額（円）
+  
+  // リレーション
+  customer      User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  worker        User?         @relation("WorkerBookings", fields: [workerId], references: [id])
+  payment       Payment?
+  review        Review?
+  messages      Message[]
+  
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  
+  @@map("bookings")
+}
+
+// 決済
+model Payment {
+  id            String        @id @default(uuid())
+  bookingId     String        @unique @map("booking_id")
+  userId        String        @map("user_id") // 支払い者（依頼者）
+  amount        Int           // 金額（円）
+  paymentMethod String        @map("payment_method") // "credit_card", "bank_transfer"など
+  status        PaymentStatus @default(PENDING)
+  transactionId String?       @map("transaction_id") // 外部決済システムのトランザクションID
+  
+  // リレーション
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  
+  @@map("payments")
+}
+
+// レビュー・評価
+model Review {
+  id            String   @id @default(uuid())
+  bookingId     String   @unique @map("booking_id")
+  reviewerId    String   @map("reviewer_id") // 評価する人（依頼者）
+  revieweeId    String   @map("reviewee_id") // 評価される人（ワーカー）
+  rating        Int      // 1-5の評価
+  comment       String?  // コメント
+  
+  // リレーション
+  booking       Booking  @relation(fields: [bookingId], references: [id])
+  reviewer      User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee      User     @relation("Reviewee", fields: [revieweeId], references: [id])
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  @@map("reviews")
+}
+
+// チャットメッセージ
+model Message {
+  id            String   @id @default(uuid())
+  bookingId     String   @map("booking_id")
+  senderId      String   @map("sender_id")
+  receiverId    String   @map("receiver_id")
+  content       String
+  isRead        Boolean  @default(false) @map("is_read")
+  
+  // リレーション
+  booking       Booking  @relation(fields: [bookingId], references: [id])
+  sender        User     @relation("Sender", fields: [senderId], references: [id])
+  receiver      User     @relation("Receiver", fields: [receiverId], references: [id])
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  @@map("messages")
+}
+
+// 問い合わせ・サポートチケット
+model SupportTicket {
+  id            String           @id @default(uuid())
+  userId        String           @map("user_id")
+  subject       String
+  content       String
+  status        SupportStatus    @default(OPEN)
+  adminResponse String?          @map("admin_response")
+  adminId       String?          @map("admin_id") // 対応した管理者
+  
+  // リレーション
+  user          User             @relation(fields: [userId], references: [id])
+  
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  
+  @@map("support_tickets")
+}
+
+// 列挙型
+enum UserRole {
+  CUSTOMER
+  WORKER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum WorkerApprovalStatus {
+  PENDING      // 審査中
+  APPROVED     // 承認済み
+  REJECTED     // 却下
+}
+
+enum BookingStatus {
+  PENDING      // ワーカー選択待ち
+  CONFIRMED    // 確定
+  IN_PROGRESS  // 作業中
+  COMPLETED    // 完了
+  CANCELLED    // キャンセル
+}
+
+enum PaymentStatus {
+  PENDING      // 決済待ち
+  COMPLETED    // 決済完了
+  FAILED       // 決済失敗
+  REFUNDED     // 返金済み
+}
+
+enum SupportStatus {
+  OPEN         // 未対応
+  IN_PROGRESS  // 対応中
+  CLOSED       // 対応完了
+}
+
+// 通知
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  title     String
+  content   String
+  isRead    Boolean          @default(false) @map("is_read")
+  relatedId String?          @map("related_id") // 関連するエンティティのID（予約ID、メッセージIDなど）
+  relatedType String?        @map("related_type") // 関連するエンティティのタイプ（BOOKING, MESSAGE, REVIEW, PAYMENTなど）
+  
+  // リレーション
+  user      User             @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime         @default(now()) @map("created_at")
+  
+  @@map("notifications")
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+enum NotificationType {
+  MESSAGE         // メッセージ受信
+  BOOKING_UPDATE  // 予約更新
+  BOOKING_CREATED // 予約作成
+  BOOKING_CANCELLED // 予約キャンセル
+  REVIEW          // レビュー投稿
+  PAYMENT         // 決済完了
+  PAYMENT_FAILED  // 決済失敗
+  SYSTEM          // システム通知
+  WORKER_APPROVED // ワーカー承認
+  WORKER_REJECTED // ワーカー却下
+}
+
+// ファイル
+model File {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  filePath    String    @map("file_path")
+  originalName String   @map("original_name")
+  mimeType    String    @map("mime_type")
+  fileSize    Int       @map("file_size") // バイト
+  fileType    FileType  @default(GENERAL) @map("file_type")
+  
+  // リレーション
+  user        User      @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  @@map("files")
+  @@index([userId, fileType])
+  @@index([userId, createdAt])
+}
+
+enum FileType {
+  PROFILE_IMAGE  // プロフィール画像
+  ID_DOCUMENT   // 本人確認書類
+  GENERAL       // その他
+}
+
+// パスワードリセットトークン
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("password_reset_tokens")
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// お気に入り（ワーカーをお気に入りに追加）
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id") // お気に入りを追加したユーザー（依頼者）
+  workerId String   @map("worker_id") // お気に入りに追加されたワーカー
+  
+  // リレーション
+  user      User     @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  worker    User     @relation("WorkerFavorites", fields: [workerId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("favorites")
+  @@unique([userId, workerId]) // 同じワーカーを重複して追加できないようにする
+  @@index([userId])
+  @@index([workerId])
+}
+
+// サービスメニュー
+model ServiceMenu {
+  id          String   @id @default(uuid())
+  name        String   // サービス名（例: "掃除・清掃", "料理", "洗濯", "買い物代行"）
+  description String?   // 説明
+  basePrice   Int?      @map("base_price") // 基本料金（円、オプション）
+  isActive    Boolean   @default(true) @map("is_active") // 有効/無効
+  displayOrder Int      @default(0) @map("display_order") // 表示順序
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("service_menus")
+  @@index([isActive])
+}
+
+// 対応エリア
+model Area {
+  id          String   @id @default(uuid())
+  name        String   // エリア名（例: "札幌市", "江別市", "北広島市", "石狩市"）
+  prefecture  String?  // 都道府県
+  postalCode  String?  @map("postal_code") // 郵便番号（範囲指定可能）
+  isActive    Boolean  @default(true) @map("is_active") // 有効/無効
+  displayOrder Int     @default(0) @map("display_order") // 表示順序
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("areas")
+  @@index([isActive])
+}
+
+// システム設定
+model SystemSettings {
+  id          String   @id @default(uuid())
+  key         String   @unique // 設定キー
+  value       String   // 設定値（JSON形式で保存可能）
+  description String?  // 説明
+  category    String?  // カテゴリ（例: "general", "payment", "notification"）
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("system_settings")
+  @@index([category])
+  @@index([key])
+}
+
+// クレジットカード情報
+model CreditCard {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id") // カード所有者（顧客）
+  last4         String   @map("last_4") // カード番号の下4桁
+  brand         String   // "visa", "mastercard", "jcb", "amex"など
+  expiryMonth   Int      @map("expiry_month") // 有効期限（月）
+  expiryYear    Int      @map("expiry_year") // 有効期限（年）
+  cardholderName String  @map("cardholder_name") // カード名義人
+  isDefault     Boolean  @default(false) @map("is_default") // デフォルトカードかどうか
+  isActive      Boolean  @default(true) @map("is_active") // 有効かどうか
+  
+  // 外部決済システムのトークン（実際のカード番号は保存しない）
+  token         String?  // 外部決済システム（Stripe等）のトークン
+  
+  // リレーション
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  @@map("credit_cards")
+  @@index([userId])
+  @@index([userId, isDefault])
+}

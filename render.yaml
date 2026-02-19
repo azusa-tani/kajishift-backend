@@ -1,0 +1,28 @@
+# Render デプロイメント設定ファイル
+# このファイルはオプションです。Renderのダッシュボードからも設定できます。
+
+services:
+  # Webサービス（API）
+  - type: web
+    name: kajishift-api
+    env: node
+    plan: free  # または starter, standard など
+    buildCommand: npm install && npm run prisma:generate
+    startCommand: npm run prisma:migrate:deploy && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      # DATABASE_URLはRenderのPostgreSQLサービスから自動的に設定されます
+      # 以下の環境変数はRenderのダッシュボードで設定してください：
+      # - JWT_SECRET
+      # - CORS_ORIGIN
+      # - その他の環境変数
+
+databases:
+  # PostgreSQLデータベース
+  - name: kajishift-db
+    plan: free  # または starter, standard など
+    databaseName: kajishift
+    user: kajishift_user
