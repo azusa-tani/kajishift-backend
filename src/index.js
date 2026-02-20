@@ -41,6 +41,9 @@ app.use(helmetMiddleware);
 // レスポンス圧縮
 app.use(compression());
 
+// trust proxy設定（Renderなどのプロキシ経由のリクエストに対応）
+app.set('trust proxy', true);
+
 // CORS設定
 // CORS_ORIGINが複数のURLをカンマ区切りで指定されている場合は配列に変換
 const corsOrigins = process.env.CORS_ORIGIN 
