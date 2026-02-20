@@ -31,7 +31,7 @@ dist/
 build/
 
 # Prisma
-prisma/migrations/
+# prisma/migrations/
 
 # アップロードファイル
 uploads/
