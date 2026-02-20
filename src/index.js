@@ -42,8 +42,20 @@ app.use(helmetMiddleware);
 app.use(compression());
 
 // CORS設定
+// CORS_ORIGINが複数のURLをカンマ区切りで指定されている場合は配列に変換
+const corsOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:5500'];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5500',
+  origin: (origin, callback) => {
+    // オリジンが未指定（同一オリジンリクエスト）または許可リストに含まれている場合
+    if (!origin || corsOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy: Origin not allowed'));
+    }
+  },
   credentials: true
 }));
 

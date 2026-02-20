@@ -14,9 +14,21 @@ let io = null;
  * @param {object} httpServer - HTTPサーバーインスタンス
  */
 const initializeSocket = (httpServer) => {
+  // CORS_ORIGINが複数のURLをカンマ区切りで指定されている場合は配列に変換
+  const corsOrigins = process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : ['http://localhost:5500'];
+
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:5500',
+      origin: (origin, callback) => {
+        // オリジンが未指定または許可リストに含まれている場合
+        if (!origin || corsOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('CORS policy: Origin not allowed'));
+        }
+      },
       methods: ['GET', 'POST'],
       credentials: true
     },
