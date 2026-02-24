@@ -7,6 +7,8 @@ const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 const logger = require('../config/logger');
 const socketService = require('../config/socket');
+const bcrypt = require('bcrypt');
+const { validateEmail, validatePassword } = require('../utils/validators');
 
 /**
  * ユーザー一覧を取得（管理者のみ）
@@ -1860,7 +1862,77 @@ const deleteArea = async (areaId) => {
   };
 };
 
+/**
+ * 管理者を新規登録（既存管理者のみが実行可能）
+ * @param {string} adminId - 登録を実行する管理者のID
+ * @param {object} adminData - 新しい管理者のデータ
+ */
+const registerAdmin = async (adminId, adminData) => {
+  const { email, password, name, phone } = adminData;
+
+  // バリデーション
+  if (!email || !password || !name) {
+    throw new Error('メールアドレス、パスワード、名前は必須です');
+  }
+
+  // メールアドレスの形式チェック
+  if (!validateEmail(email)) {
+    throw new Error('有効なメールアドレスを入力してください');
+  }
+
+  // パスワードのバリデーション
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.valid) {
+    throw new Error(passwordValidation.message);
+  }
+
+  // メールアドレスの重複チェック
+  const existingUser = await prisma.user.findUnique({
+    where: { email }
+  });
+
+  if (existingUser) {
+    throw new Error('このメールアドレスは既に登録されています');
+  }
+
+  // パスワードをハッシュ化
+  const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 10;
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+  // 管理者ユーザーを作成
+  const newAdmin = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      name,
+      phone: phone || null,
+      role: 'ADMIN',
+      status: 'ACTIVE'
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      phone: true,
+      role: true,
+      status: true,
+      createdAt: true
+    }
+  });
+
+  // ログに記録
+  logger.info('New admin registered', {
+    adminId,
+    newAdminId: newAdmin.id,
+    newAdminEmail: newAdmin.email,
+    timestamp: new Date().toISOString()
+  });
+
+  return newAdmin;
+};
+
 module.exports = {
+  registerAdmin,
   getUsers,
   getWorkers,
   approveWorker,

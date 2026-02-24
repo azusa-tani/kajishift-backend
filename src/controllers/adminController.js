@@ -677,6 +677,39 @@ const deleteArea = async (req, res, next) => {
   }
 };
 
+/**
+ * 管理者を新規登録（既存管理者のみが実行可能）
+ * POST /api/admin/register
+ */
+const registerAdmin = async (req, res, next) => {
+  try {
+    const adminId = req.user.id; // 認証済み管理者のID
+    const { email, password, name, phone } = req.body;
+
+    // 必須フィールドのチェック
+    if (!email || !password || !name) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'メールアドレス、パスワード、名前は必須です'
+      });
+    }
+
+    const newAdmin = await adminService.registerAdmin(adminId, {
+      email,
+      password,
+      name,
+      phone
+    });
+
+    res.status(201).json({
+      message: '管理者の登録が完了しました',
+      data: newAdmin
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getWorkers,
@@ -710,5 +743,6 @@ module.exports = {
   getAreas,
   createArea,
   updateArea,
-  deleteArea
+  deleteArea,
+  registerAdmin
 };

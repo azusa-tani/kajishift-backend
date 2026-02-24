@@ -59,6 +59,74 @@ router.get('/users', adminController.getUsers);
 
 /**
  * @swagger
+ * /admin/register:
+ *   post:
+ *     summary: 管理者を新規登録（既存管理者のみが実行可能）
+ *     tags: [管理者]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - name
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: newadmin@kajishift.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: password123
+ *               name:
+ *                 type: string
+ *                 example: 新規管理者
+ *               phone:
+ *                 type: string
+ *                 example: 090-1234-5678
+ *     responses:
+ *       201:
+ *         description: 管理者登録成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 管理者の登録が完了しました
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                       example: ADMIN
+ *                     status:
+ *                       type: string
+ *                       example: ACTIVE
+ *       400:
+ *         description: バリデーションエラー
+ *       401:
+ *         description: 認証エラー
+ *       403:
+ *         description: 管理者のみアクセス可能
+ */
+router.post('/register', adminController.registerAdmin);
+
+/**
+ * @swagger
  * /admin/users/{id}:
  *   put:
  *     summary: ユーザー情報更新（管理者のみ）
