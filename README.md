@@ -134,6 +134,7 @@ kajishift-backend/
 - [`docs/DATABASE_SETUP.md`](./docs/DATABASE_SETUP.md) - データベースセットアップガイド
 - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) - デプロイメントガイド（全プラットフォーム対応）
 - [`docs/RENDER_DEPLOYMENT.md`](./docs/RENDER_DEPLOYMENT.md) - Renderデプロイメント詳細手順書
+- [`docs/DEPLOYMENT_HANDOVER.md`](./docs/DEPLOYMENT_HANDOVER.md) - **デプロイメント作業 引継ぎドキュメント（最新）**
 - [`docs/HANDOVER_PROMPT.md`](./docs/HANDOVER_PROMPT.md) - プロジェクト引継ぎドキュメント
 - [`docs/HANDOVER_COMPLETE.md`](./docs/HANDOVER_COMPLETE.md) - プロジェクト引継ぎ完了ドキュメント
 - [`docs/FRONTEND_INTEGRATION.md`](./docs/FRONTEND_INTEGRATION.md) - フロントエンド連携仕様書

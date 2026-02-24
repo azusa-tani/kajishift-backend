@@ -110,6 +110,90 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /health/db:
+ *   get:
+ *     summary: データベース診断エンドポイント
+ *     tags: [その他]
+ *     responses:
+ *       200:
+ *         description: データベースの状態情報
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 database:
+ *                   type: object
+ *                 tables:
+ *                   type: array
+ *                 migrations:
+ *                   type: object
+ */
+app.get('/api/health/db', async (req, res) => {
+  const prisma = require('./config/database');
+  const { PrismaClient } = require('@prisma/client');
+  
+  try {
+    // データベース接続確認
+    await prisma.$connect();
+    
+    // テーブル一覧を取得（PostgreSQL）
+    const tables = await prisma.$queryRaw`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_type = 'BASE TABLE'
+      ORDER BY table_name;
+    `;
+    
+    // マイグレーション履歴を取得
+    let migrations = [];
+    try {
+      migrations = await prisma.$queryRaw`
+        SELECT migration_name, finished_at, applied_steps_count
+        FROM _prisma_migrations
+        ORDER BY finished_at DESC;
+      `;
+    } catch (err) {
+      // _prisma_migrationsテーブルが存在しない場合
+      migrations = { error: 'Migration table not found', message: err.message };
+    }
+    
+    // usersテーブルの存在確認とレコード数
+    let userCount = null;
+    let usersTableExists = false;
+    try {
+      userCount = await prisma.user.count();
+      usersTableExists = true;
+    } catch (err) {
+      usersTableExists = false;
+    }
+    
+    res.json({
+      status: 'OK',
+      database: {
+        connected: true,
+        usersTableExists: usersTableExists,
+        userCount: userCount
+      },
+      tables: tables.map(t => t.table_name),
+      migrations: migrations,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // 静的ファイルの配信（アップロードされたファイル用）
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
