@@ -4,6 +4,7 @@
 
 const authService = require('../services/authService');
 const uploadService = require('../services/uploadService');
+const logger = require('../config/logger');
 const path = require('path');
 
 /**
@@ -154,13 +155,25 @@ const login = async (req, res, next) => {
       });
     }
 
+    // ログイン試行をログに記録（デバッグ用）
+    logger.info('Login attempt', { email, timestamp: new Date().toISOString() });
+
     const result = await authService.login(email, password);
+
+    logger.info('Login successful', { email, userId: result.user.id, role: result.user.role });
 
     res.json({
       message: 'ログインに成功しました',
       data: result
     });
   } catch (error) {
+    // エラーの詳細をログに記録
+    logger.error('Login error', {
+      email: req.body.email,
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
     next(error);
   }
 };

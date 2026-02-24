@@ -166,9 +166,31 @@ app.get('/api/health/db', async (req, res) => {
     // usersテーブルの存在確認とレコード数
     let userCount = null;
     let usersTableExists = false;
+    let adminUser = null;
     try {
       userCount = await prisma.user.count();
       usersTableExists = true;
+      
+      // 管理者ユーザーの情報を取得
+      try {
+        adminUser = await prisma.user.findUnique({
+          where: { email: 'admin@kajishift.com' },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            status: true
+          }
+        });
+        // 管理者ユーザーが見つからない場合
+        if (!adminUser) {
+          adminUser = { error: 'Admin user not found', email: 'admin@kajishift.com' };
+        }
+      } catch (err) {
+        // エラーが発生した場合
+        adminUser = { error: err.message, stack: err.stack };
+      }
     } catch (err) {
       usersTableExists = false;
     }
@@ -178,7 +200,8 @@ app.get('/api/health/db', async (req, res) => {
       database: {
         connected: true,
         usersTableExists: usersTableExists,
-        userCount: userCount
+        userCount: userCount,
+        adminUser: adminUser
       },
       tables: tables.map(t => t.table_name),
       migrations: migrations,
