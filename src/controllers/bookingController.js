@@ -42,6 +42,16 @@ const getBookingById = async (req, res, next) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
+    // UUID形式のバリデーション（簡易版）
+    // UUIDは通常36文字（ハイフン含む）または32文字（ハイフンなし）
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(id)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: '無効な予約ID形式です。予約IDはUUID形式である必要があります。'
+      });
+    }
+
     const booking = await bookingService.getBookingById(id, userId, userRole);
 
     res.json({
