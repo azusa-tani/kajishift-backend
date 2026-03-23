@@ -72,7 +72,7 @@ try {
   console.log('  管理者: admin@kajishift.com / password123');
   console.log('');
   console.log('🔍 確認方法:');
-  console.log('  https://kajishift-api.onrender.com/api/health/db');
+  console.log('  https://kajishift-backend-production.up.railway.app/api/health/db');
   console.log('');
 } catch (error) {
   console.error('');

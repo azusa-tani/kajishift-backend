@@ -1,8 +1,67 @@
 # フロントエンド・バックエンド連携状況
 
-最終更新日: 2026年2月18日（最新）
+最終更新日: 2026年3月（最新）
 
 ## 📋 更新履歴
+
+- **2026年3月**: フロントエンドのVercel移行完了
+  - ✅ NetlifyからVercelへ移行（クレジット問題回避）
+  - ✅ GitHubとVercelの連携設定完了（CI/CD構築）
+  - ✅ 静的HTMLサイトとしてデプロイ成功
+  - ✅ 3ロールログイン画面確認済み（依頼者・ワーカー・管理者）
+  - ✅ 法務ページ公開完了（利用規約・プライバシーポリシー・特定商取引法）
+  - ✅ 本番URL確立: `https://kajishift-frontend.vercel.app`
+  - ⚠️ **重要**: Railwayの環境変数`CORS_ORIGIN`を`https://kajishift-frontend.vercel.app`に更新する必要があります
+
+- **2026年3月23日**: バックエンドのRailway移行対応
+  - ✅ バックエンド本番URLをRenderからRailwayへ移行
+  - ✅ フロントエンド接続先APIを`https://kajishift-backend-production.up.railway.app/api`に更新
+  - ✅ WebSocket接続先を`https://kajishift-backend-production.up.railway.app`に更新
+
+- **2026年3月2日**: トップページUI改善
+  - ✅ 「ご利用の流れ」ボタンのスタイル改善（`index.html`、`css/style.css`）
+    - ボタンサイズを拡大（パディング: `16px 32px`、フォントサイズ: `var(--font-size-lg)`）
+    - 中央配置を確実にするため`justify-content: center`と`margin: 0 auto`を追加
+    - 矢印アイコンのサイズを`1em`（テキストと同じサイズ）に調整
+  - ✅ 特徴カードのアイコンを画像に変更（`index.html`、`css/style.css`）
+    - お金のアイコン（💰）→ `object_gamaguchi.png`
+    - カレンダーのアイコン（📅）→ `business_karenda.png`
+    - 盾のアイコン（🛡️）→ `business_tate.png`
+    - アイコンサイズを`3.5rem`（56px）に設定し、中央配置を実装
+
+- **2026年2月27日**: チャットページメニュー機能追加、ユーザーテスト仕様書作成
+  - ✅ チャットページにメニューボタンとドロップダウンメニューを追加（`customer/chat.html`）
+  - ✅ ワーカープロフィールモーダルを追加（チャットページから直接アクセス可能）
+  - ✅ チャットメニューのスタイルを追加（`css/style.css`）
+  - ✅ 管理者・依頼者・ワーカーのユーザーテスト仕様書を作成
+    - `docs/TEST_SPEC_ADMIN.md`: 管理者テスト仕様書（38項目）
+    - `docs/TEST_SPEC_CUSTOMER.md`: 依頼者テスト仕様書（35項目）
+    - `docs/TEST_SPEC_WORKER.md`: ワーカーテスト仕様書（30項目）
+    - `docs/TEST_SPEC_OVERVIEW.md`: テスト仕様書概要
+  - ✅ 各テスト仕様書にテスト用アカウント情報とテスト実行フローを追記
+
+- **2026年2月25日**: 未連携APIエンドポイントのフロントエンド連携完了
+  - ✅ 予約完了API連携（`/api/bookings/:id/complete`）
+  - ✅ サポートAPI連携（作成・詳細取得）
+  - ✅ レビューAPI連携（投稿・一覧取得）
+  - ✅ お気に入りAPI連携（5つのエンドポイント）
+  - ✅ ファイルアップロードAPI連携（5つのエンドポイント）
+  - ✅ システム設定API連携（GET/PUT）
+  - ✅ ExcelエクスポートAPI連携（4つのエンドポイント）
+  - ✅ `api.js`に不足していたメソッドを追加（`completeBooking`, `acceptBooking`, `rejectBooking`, `downloadExcel`）
+  - ✅ `worker/job-detail.html`と`worker/jobs.html`に作業完了機能と正しいAPI呼び出しを実装
+
+- **2026年2月25日**: フロントエンドUI改善
+  - ✅ ヘッダー: 「依頼者ログイン」「ワーカーログイン」に変更（`index.html`）
+  - ✅ フッター: 「管理者」リンクを追加（`index.html`）
+  - ✅ ロゴ: マークをKAJISHIFTテキストの中央上部に配置、サイズを48pxに拡大（`css/style.css`）
+  - ✅ ヒーローセクションのサブタイトルを白文字に変更（テキストシャドウ付き）
+  - ✅ ヘッダー・フッターリンクのスタイルを統一
+
+- **2026年2月24日**: 管理者登録機能追加
+  - ✅ 管理者登録API (`POST /api/admin/register`) 実装・連携完了
+  - ✅ 管理者登録フォーム（`admin/users.html`）実装完了
+  - ✅ セキュリティ強化（管理者ログインページから新規登録リンクを削除）
 
 - **2026年2月18日**: フロントエンド連携完了
   - ✅ 管理者詳細ページ（ユーザー詳細、ワーカー詳細、予約詳細）実装
@@ -19,9 +78,9 @@
 
 ## 📊 連携状況サマリー
 
-- **連携済み・テスト完了**: 50項目（全APIエンドポイント実装完了）
+- **連携済み・テスト完了**: 71項目（全APIエンドポイント実装完了・連携完了）✨ 2026年2月25日更新
 - **連携していない・テスト未実行**: 0項目（バックエンド実装完了）
-- **フロントエンド連携**: ✅ 完了（46ページ/機能実装完了）
+- **フロントエンド連携**: ✅ 完了（47ページ/機能実装完了）
 
 ---
 
@@ -96,52 +155,53 @@
 | `/api/admin/reports/users` | GET | ✅ 連携済み・テスト完了 | ユーザー統計レポート取得 |
 | `/api/admin/reports/workers` | GET | ✅ 連携済み・テスト完了 | ワーカー統計レポート取得 |
 | `/api/admin/reports/bookings/export/csv` | GET | ✅ 実装済み | 予約レポートCSVエクスポート |
-| `/api/admin/reports/bookings/export/excel` | GET | ✅ 実装済み | 予約レポートExcelエクスポート |
+| `/api/admin/reports/bookings/export/excel` | GET | ✅ 実装済み・連携完了 | 予約レポートExcelエクスポート ✨ 2026年2月25日連携完了 |
 | `/api/admin/reports/revenue/export/csv` | GET | ✅ 実装済み | 売上レポートCSVエクスポート |
-| `/api/admin/reports/revenue/export/excel` | GET | ✅ 実装済み | 売上レポートExcelエクスポート |
+| `/api/admin/reports/revenue/export/excel` | GET | ✅ 実装済み・連携完了 | 売上レポートExcelエクスポート ✨ 2026年2月25日連携完了 |
 | `/api/admin/reports/users/export/csv` | GET | ✅ 実装済み | ユーザーレポートCSVエクスポート |
-| `/api/admin/reports/users/export/excel` | GET | ✅ 実装済み | ユーザーレポートExcelエクスポート |
+| `/api/admin/reports/users/export/excel` | GET | ✅ 実装済み・連携完了 | ユーザーレポートExcelエクスポート ✨ 2026年2月25日連携完了 |
 | `/api/admin/reports/workers/export/csv` | GET | ✅ 実装済み | ワーカーレポートCSVエクスポート |
-| `/api/admin/reports/workers/export/excel` | GET | ✅ 実装済み | ワーカーレポートExcelエクスポート |
+| `/api/admin/reports/workers/export/excel` | GET | ✅ 実装済み・連携完了 | ワーカーレポートExcelエクスポート ✨ 2026年2月25日連携完了 |
 | `/api/admin/notifications/system` | POST | ✅ 実装済み | システム通知作成 |
 | `/api/admin/reports/chart/:reportType` | GET | ✅ 実装済み | グラフ用データ取得 |
 | `/api/admin/reports/comparison/:reportType` | GET | ✅ 実装済み | 比較レポート取得 |
 | `/api/admin/reports/custom` | POST | ✅ 実装済み | カスタムレポート取得 |
+| `/api/admin/register` | POST | ✅ 実装済み・連携完了 | 管理者を新規登録（既存管理者のみが実行可能）✨ 2026年2月24日追加 |
 
 ### サポートAPI
 
 | エンドポイント | メソッド | 状態 | 備考 |
 |--------------|---------|------|------|
 | `/api/support` | GET | ✅ 連携済み・テスト完了 | サポートチケット一覧取得（ページネーション対応） |
-| `/api/support` | POST | ✅ 実装済み | サポートチケット作成 |
-| `/api/support/:id` | GET | ✅ 実装済み | サポートチケット詳細取得 |
+| `/api/support` | POST | ✅ 実装済み・連携完了 | サポートチケット作成 ✨ 2026年2月25日連携完了 |
+| `/api/support/:id` | GET | ✅ 実装済み・連携完了 | サポートチケット詳細取得 ✨ 2026年2月25日連携完了 |
 
 ### レビューAPI
 
 | エンドポイント | メソッド | 状態 | 備考 |
 |--------------|---------|------|------|
-| `/api/reviews` | POST | ✅ 実装済み | レビュー投稿（認証必須、依頼者のみ） |
-| `/api/reviews/:workerId` | GET | ✅ 実装済み | ワーカーのレビュー一覧取得（公開、ページネーション対応） |
+| `/api/reviews` | POST | ✅ 実装済み・連携完了 | レビュー投稿（認証必須、依頼者のみ） ✨ 2026年2月25日連携完了 |
+| `/api/reviews/:workerId` | GET | ✅ 実装済み・連携完了 | ワーカーのレビュー一覧取得（公開、ページネーション対応） ✨ 2026年2月25日連携完了 |
 
 ### お気に入りAPI
 
 | エンドポイント | メソッド | 状態 | 備考 |
 |--------------|---------|------|------|
-| `/api/favorites` | GET | ✅ 実装済み | お気に入り一覧取得 |
-| `/api/favorites` | POST | ✅ 実装済み | お気に入り追加 |
-| `/api/favorites/:id` | DELETE | ✅ 実装済み | お気に入り削除 |
-| `/api/favorites/worker/:workerId` | DELETE | ✅ 実装済み | ワーカーIDでお気に入り削除 |
-| `/api/favorites/check/:workerId` | GET | ✅ 実装済み | お気に入り状態確認 |
+| `/api/favorites` | GET | ✅ 実装済み・連携完了 | お気に入り一覧取得 ✨ 2026年2月25日連携完了 |
+| `/api/favorites` | POST | ✅ 実装済み・連携完了 | お気に入り追加 ✨ 2026年2月25日連携完了 |
+| `/api/favorites/:id` | DELETE | ✅ 実装済み・連携完了 | お気に入り削除 ✨ 2026年2月25日連携完了 |
+| `/api/favorites/worker/:workerId` | DELETE | ✅ 実装済み・連携完了 | ワーカーIDでお気に入り削除 ✨ 2026年2月25日連携完了 |
+| `/api/favorites/check/:workerId` | GET | ✅ 実装済み・連携完了 | お気に入り状態確認 ✨ 2026年2月25日連携完了 |
 
 ### ファイルアップロードAPI
 
 | エンドポイント | メソッド | 状態 | 備考 |
 |--------------|---------|------|------|
-| `/api/upload` | POST | ✅ 実装済み | ファイルアップロード |
-| `/api/upload` | GET | ✅ 実装済み | ファイル一覧取得 |
-| `/api/upload/:id` | GET | ✅ 実装済み | ファイル情報取得 |
-| `/api/upload/:id/download` | GET | ✅ 実装済み | ファイルダウンロード |
-| `/api/upload/:id` | DELETE | ✅ 実装済み | ファイル削除 |
+| `/api/upload` | POST | ✅ 実装済み・連携完了 | ファイルアップロード ✨ 2026年2月25日連携完了 |
+| `/api/upload` | GET | ✅ 実装済み・連携完了 | ファイル一覧取得 ✨ 2026年2月25日連携完了 |
+| `/api/upload/:id` | GET | ✅ 実装済み・連携完了 | ファイル情報取得 ✨ 2026年2月25日連携完了 |
+| `/api/upload/:id/download` | GET | ✅ 実装済み・連携完了 | ファイルダウンロード ✨ 2026年2月25日連携完了 |
+| `/api/upload/:id` | DELETE | ✅ 実装済み・連携完了 | ファイル削除 ✨ 2026年2月25日連携完了 |
 
 ---
 
@@ -153,7 +213,7 @@
 |--------------|---------|------|------|
 | `/api/bookings/:id/accept` | POST | ✅ 実装済み・連携完了 | 予約承諾（ワーカーのみ） |
 | `/api/bookings/:id/reject` | POST | ✅ 実装済み・連携完了 | 予約拒否（ワーカーのみ、拒否理由オプション） |
-| `/api/bookings/:id/complete` | POST | ✅ 実装済み | 作業完了（ワーカーのみ） |
+| `/api/bookings/:id/complete` | POST | ✅ 実装済み・連携完了 | 作業完了（ワーカーのみ） ✨ 2026年2月25日連携完了 |
 
 ### 管理者API（追加機能）
 
@@ -170,8 +230,8 @@
 
 | エンドポイント | メソッド | 状態 | 備考 |
 |--------------|---------|------|------|
-| `/api/admin/settings` | GET | ✅ 実装済み | システム設定取得 |
-| `/api/admin/settings` | PUT | ✅ 実装済み | システム設定更新 |
+| `/api/admin/settings` | GET | ✅ 実装済み・連携完了 | システム設定取得 ✨ 2026年2月25日連携完了 |
+| `/api/admin/settings` | PUT | ✅ 実装済み・連携完了 | システム設定更新 ✨ 2026年2月25日連携完了 |
 | `/api/admin/services` | GET | ✅ 実装済み・連携完了 | サービスメニュー一覧取得 |
 | `/api/admin/services` | POST | ✅ 実装済み・連携完了 | サービスメニュー作成 |
 | `/api/admin/services/:id` | PUT | ✅ 実装済み・連携完了 | サービスメニュー更新 |

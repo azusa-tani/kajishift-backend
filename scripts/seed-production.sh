@@ -79,7 +79,7 @@ if [ $? -eq 0 ]; then
     echo "  管理者: admin@kajishift.com / password123"
     echo ""
     echo "🔍 確認方法:"
-    echo "  https://kajishift-api.onrender.com/api/health/db"
+    echo "  https://kajishift-backend-production.up.railway.app/api/health/db"
     echo ""
 else
     echo ""

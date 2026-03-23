@@ -313,6 +313,43 @@ GET /api/payments
 
 **認証:** 必須
 
+### 管理者系
+
+#### 管理者を新規登録（既存管理者のみが実行可能）
+```
+POST /api/admin/register
+```
+
+**認証:** 必須（管理者のみ）
+
+**リクエストボディ:**
+```json
+{
+  "email": "newadmin@kajishift.com",
+  "password": "password123",
+  "name": "新規管理者",
+  "phone": "090-1234-5678"
+}
+```
+
+**レスポンス:**
+```json
+{
+  "message": "管理者の登録が完了しました",
+  "data": {
+    "id": "uuid",
+    "email": "newadmin@kajishift.com",
+    "name": "新規管理者",
+    "phone": "090-1234-5678",
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "createdAt": "2026-02-24T..."
+  }
+}
+```
+
+**注意:** 既存の管理者のみが新しい管理者を登録できます。一般ユーザーはこのエンドポイントにアクセスできません。
+
 ## エラーレスポンス
 
 ```json

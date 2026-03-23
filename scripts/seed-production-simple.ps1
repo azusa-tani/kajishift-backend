@@ -55,7 +55,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  ワーカー3: worker3@example.com / password123"
     Write-Host "  管理者: admin@kajishift.com / password123"
     Write-Host ""
-    Write-Host "確認方法: https://kajishift-api.onrender.com/api/health/db"
+    Write-Host "確認方法: https://kajishift-backend-production.up.railway.app/api/health/db"
     Write-Host ""
 } else {
     Write-Host ""

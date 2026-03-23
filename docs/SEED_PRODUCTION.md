@@ -63,7 +63,7 @@ $env:DATABASE_URL="postgresql://kajishift_user:VyeFrTChBqUkUWwU4QtoAARoghieuUGT@
 シード実行後、以下のURLで確認できます：
 
 ```
-https://kajishift-api.onrender.com/api/health/db
+https://kajishift-backend-production.up.railway.app/api/health/db
 ```
 
 `userCount`が`6`になっていることを確認してください。

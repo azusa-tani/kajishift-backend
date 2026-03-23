@@ -2,6 +2,12 @@
 
 家事代行マッチングサービス「KAJISHIFT」のバックエンドAPIサーバーです。
 
+## 更新履歴
+
+- **2026年3月23日**: バックエンドをRenderからRailwayへ移行し、接続設定を更新
+  - APIベースURL: `https://kajishift-backend-production.up.railway.app/api`
+  - WebSocketサーバー: `https://kajishift-backend-production.up.railway.app`
+
 ## 技術スタック
 
 - Node.js

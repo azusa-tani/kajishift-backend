@@ -93,7 +93,7 @@ if ($seedExitCode -eq 0) {
     Write-Host "  管理者: admin@kajishift.com / password123" -ForegroundColor White
     Write-Host ""
     Write-Host "🔍 確認方法:" -ForegroundColor Cyan
-    Write-Host "  https://kajishift-api.onrender.com/api/health/db" -ForegroundColor White
+    Write-Host "  https://kajishift-backend-production.up.railway.app/api/health/db" -ForegroundColor White
     Write-Host ""
 } else {
     Write-Host ""
