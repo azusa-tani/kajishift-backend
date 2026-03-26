@@ -45,22 +45,12 @@ app.use(compression());
 app.set('trust proxy', true);
 
 // CORS設定
-// CORS_ORIGINが複数のURLをカンマ区切りで指定されている場合は配列に変換
-const corsOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : ['http://localhost:5500'];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    // オリジンが未指定（同一オリジンリクエスト）または許可リストに含まれている場合
-    if (!origin || corsOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS policy: Origin not allowed'));
-    }
-  },
-  credentials: true
-}));
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || 'https://kajishift-frontend.vercel.app',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 
 // ボディパーサー
 app.use(express.json({ limit: '10mb' }));
