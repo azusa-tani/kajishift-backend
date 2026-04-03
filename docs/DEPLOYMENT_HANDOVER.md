@@ -1,7 +1,7 @@
 # デプロイメント作業 引継ぎドキュメント
 
 **作成日**: 2026年2月20日  
-**最終更新**: 2026年3月2日
+**最終更新**: 2026年3月26日
 
 ## 📋 概要
 
@@ -10,6 +10,18 @@
 ---
 
 ## ✅ 完了した作業
+
+### 2026年3月26日の更新内容
+
+- ✅ **CORS設定の運用調整**
+  - `src/index.js` のCORSを `CORS_ORIGIN` 優先 + fallback方式に更新
+  - fallback: `https://kajishift-frontend.vercel.app`
+- ✅ **Prisma seed設定を追加**
+  - `package.json` に以下を追加
+    - `"prisma": { "seed": "node prisma/seed.js" }`
+- ✅ **Railway DB接続情報を整理**
+  - `.env` の `DATABASE_URL` を Railway接続文字列へ更新
+  - `README.md` / `docs/DATABASE_SETUP.md` に Railway外部接続URL例を追記
 
 ### 2026年3月2日の更新内容
 

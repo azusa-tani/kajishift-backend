@@ -140,6 +140,13 @@ docker rm -f kajishift-postgres
    - クラウドサービスから提供された接続文字列を使用してください
    - Supabase、Railway、Heroku Postgresなどから取得できます
 
+   「Railway（本番・外部プロキシ経由）」の例：
+   ```env
+   DATABASE_URL="postgresql://postgres:AufLObigdqOjMwYtoeNQWKbQnFESMAjI@caboose.proxy.rlwy.net:55164/railway"
+   ```
+   - 外部から接続する場合の例です（Railwayダッシュボードの外部接続情報を使用）
+   - 内部接続（同一Railway内サービス間）の場合は `postgres.railway.internal` のURLが提示されることがあります
+
 3. **`.env`ファイルの完全なテンプレート**
 
    プロジェクトルートに`.env`ファイルを作成し、以下の内容を設定してください：
@@ -372,6 +379,6 @@ curl http://localhost:3000/api/health
 
 ---
 
-**最終更新**: 2024年  
+**最終更新**: 2026年3月26日  
 **作成者**: AI Assistant (Cursor)  
 **関連ドキュメント**: [`HANDOVER_PROMPT.md`](./HANDOVER_PROMPT.md)

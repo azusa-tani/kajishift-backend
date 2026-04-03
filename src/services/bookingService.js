@@ -6,6 +6,41 @@ const prisma = require('../config/database');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 
+/** Express の qs やクライアントによりクエリ値が配列になることがあるため先頭要素を採用 */
+const firstQueryValue = (value) => {
+  if (value === undefined || value === null) return value;
+  return Array.isArray(value) ? value[0] : value;
+};
+
+/**
+ * available などの真偽クエリを正規化（'true', 'True', true, '1' 等）
+ */
+const parseBooleanQuery = (value) => {
+  const v = firstQueryValue(value);
+  if (v === true || v === 1) return true;
+  if (v === false || v === 0 || v === '' || v === undefined || v === null) return false;
+  const s = String(v).trim().toLowerCase();
+  return s === 'true' || s === '1' || s === 'yes';
+};
+
+/** YYYY-MM-DD は UTC の日境界として解釈（scheduledDate が UTC 0:00 で保存されている前提） */
+const parseDateFilterUtc = (value, endOfDay) => {
+  const raw = firstQueryValue(value);
+  if (raw === undefined || raw === null || raw === '') return null;
+  const str = String(raw).trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+  if (m) {
+    const y = Number(m[1]);
+    const mo = Number(m[2]) - 1;
+    const d = Number(m[3]);
+    return endOfDay
+      ? new Date(Date.UTC(y, mo, d, 23, 59, 59, 999))
+      : new Date(Date.UTC(y, mo, d, 0, 0, 0, 0));
+  }
+  const dt = new Date(str);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+};
+
 /**
  * 予約一覧を取得
  * @param {string} userId - ユーザーID
@@ -22,7 +57,19 @@ const getBookings = async (userId, userRole, filters = {}) => {
     page = 1, 
     limit = 20 
   } = filters;
-  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+  const skip = (pageNum - 1) * limitNum;
+
+  const statusStrRaw = firstQueryValue(status);
+  let statusStr;
+  if (statusStrRaw === undefined || statusStrRaw === null || statusStrRaw === '') {
+    statusStr = undefined;
+  } else {
+    statusStr = String(statusStrRaw).trim();
+    if (statusStr === '') statusStr = undefined;
+  }
+  const wantOpenJobs = userRole === 'WORKER' && parseBooleanQuery(available);
 
   // クエリ条件を構築
   const where = {};
@@ -31,15 +78,15 @@ const getBookings = async (userId, userRole, filters = {}) => {
   if (userRole === 'CUSTOMER') {
     where.customerId = userId;
   } else if (userRole === 'WORKER') {
-    // available=trueの場合は、ワーカー未割り当ての予約を取得
-    if (available === 'true' || available === true) {
-      where.workerId = null;
-      // デフォルトでPENDINGステータスのみ
-      if (!status) {
+    // available=true の場合は、ワーカー未割り当ての予約のみ（新規案件一覧）
+    if (wantOpenJobs) {
+      where.workerId = { equals: null };
+      // ステータス未指定時は PENDING のみ（従来どおり）
+      if (!statusStr) {
         where.status = 'PENDING';
       }
     } else {
-      // 通常は自分の予約を取得
+      // 通常は自分に割り当てられた予約を取得
       where.workerId = userId;
     }
   } else if (userRole === 'ADMIN') {
@@ -49,34 +96,34 @@ const getBookings = async (userId, userRole, filters = {}) => {
   }
 
   // ステータスフィルター（複数のステータスをカンマ区切りで受け取れる）
-  if (status) {
-    if (status.includes(',')) {
-      // カンマ区切りの場合は配列として処理
-      const statusArray = status.split(',').map(s => s.trim());
-      where.status = {
-        in: statusArray
-      };
+  if (statusStr) {
+    if (statusStr.includes(',')) {
+      const statusArray = statusStr.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+      where.status = { in: statusArray };
     } else {
-      // 単一のステータスの場合
-      where.status = status;
+      where.status = statusStr.toUpperCase();
     }
   }
 
   // サービス種別フィルター
-  if (serviceType) {
-    where.serviceType = serviceType;
+  const serviceTypeNorm = firstQueryValue(serviceType);
+  if (serviceTypeNorm !== undefined && serviceTypeNorm !== null && String(serviceTypeNorm).trim() !== '') {
+    where.serviceType = String(serviceTypeNorm).trim();
   }
 
-  // 日付範囲フィルター
+  // 日付範囲フィルター（YYYY-MM-DD は UTC 日単位。それ以外は従来どおり Date パース）
   if (startDate || endDate) {
     where.scheduledDate = {};
     if (startDate) {
-      where.scheduledDate.gte = new Date(startDate);
+      const gte = parseDateFilterUtc(startDate, false);
+      if (gte) where.scheduledDate.gte = gte;
     }
     if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      where.scheduledDate.lte = end;
+      const lte = parseDateFilterUtc(endDate, true);
+      if (lte) where.scheduledDate.lte = lte;
+    }
+    if (Object.keys(where.scheduledDate).length === 0) {
+      delete where.scheduledDate;
     }
   }
 
@@ -108,7 +155,7 @@ const getBookings = async (userId, userRole, filters = {}) => {
         scheduledDate: 'desc'
       },
       skip,
-      take: parseInt(limit)
+      take: limitNum
     }),
     prisma.booking.count({ where })
   ]);
@@ -116,10 +163,10 @@ const getBookings = async (userId, userRole, filters = {}) => {
   return {
     bookings,
     pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page: pageNum,
+      limit: limitNum,
       total,
-      totalPages: Math.ceil(total / parseInt(limit))
+      totalPages: Math.ceil(total / limitNum)
     }
   };
 };

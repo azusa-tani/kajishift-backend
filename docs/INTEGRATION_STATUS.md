@@ -4,6 +4,11 @@
 
 ## 📋 更新履歴
 
+- **2026年3月26日**: 接続設定・環境変数の最終調整
+  - ✅ バックエンドCORS設定を本番運用向けに簡素化（`CORS_ORIGIN`優先）
+  - ✅ Prisma seed設定を `package.json` に追加
+  - ✅ Railway外部接続用 `DATABASE_URL` の利用手順をドキュメントへ反映
+
 - **2026年3月**: フロントエンドのVercel移行完了
   - ✅ NetlifyからVercelへ移行（クレジット問題回避）
   - ✅ GitHubとVercelの連携設定完了（CI/CD構築）

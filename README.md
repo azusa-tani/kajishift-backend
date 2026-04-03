@@ -4,6 +4,11 @@
 
 ## 更新履歴
 
+- **2026年3月26日**: Railway運用向けの接続・設定を更新
+  - `src/index.js` のCORS設定を更新（`CORS_ORIGIN`優先、未設定時は `https://kajishift-frontend.vercel.app`）
+  - `package.json` に Prisma seed設定を追加（`"prisma": { "seed": "node prisma/seed.js" }`）
+  - `.env` の `DATABASE_URL` を Railway接続文字列へ更新
+
 - **2026年3月23日**: バックエンドをRenderからRailwayへ移行し、接続設定を更新
   - APIベースURL: `https://kajishift-backend-production.up.railway.app/api`
   - WebSocketサーバー: `https://kajishift-backend-production.up.railway.app`
@@ -35,6 +40,8 @@ NODE_ENV=development
 
 # データベース（PostgreSQL）
 DATABASE_URL="postgresql://username:password@localhost:5432/kajishift?schema=public"
+# 本番（Railway 外部プロキシ例）
+# DATABASE_URL="postgresql://postgres:AufLObigdqOjMwYtoeNQWKbQnFESMAjI@caboose.proxy.rlwy.net:55164/railway"
 
 # JWT認証
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
