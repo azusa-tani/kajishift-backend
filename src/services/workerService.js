@@ -115,6 +115,8 @@ const getWorkerById = async (workerId) => {
       name: true,
       bio: true,
       hourlyRate: true,
+      serviceAreaText: true,
+      availabilityText: true,
       rating: true,
       reviewCount: true,
       approvalStatus: true,
@@ -168,7 +170,17 @@ const getWorkerById = async (workerId) => {
  * @param {object} updateData - 更新データ
  */
 const updateWorkerProfile = async (userId, updateData) => {
-  const { bio, hourlyRate } = updateData;
+  const {
+    bio,
+    hourlyRate,
+    serviceAreaText,
+    availabilityText,
+    bankName,
+    branchName,
+    accountType,
+    accountNumber,
+    accountName
+  } = updateData;
 
   // ユーザーがワーカーか確認
   const user = await prisma.user.findUnique({
@@ -201,6 +213,40 @@ const updateWorkerProfile = async (userId, updateData) => {
     updateFields.hourlyRate = hourlyRate || null;
   }
 
+  if (serviceAreaText !== undefined) {
+    updateFields.serviceAreaText = serviceAreaText ? String(serviceAreaText).trim() || null : null;
+  }
+
+  if (availabilityText !== undefined) {
+    updateFields.availabilityText = availabilityText ? String(availabilityText).trim() || null : null;
+  }
+
+  if (bankName !== undefined) {
+    updateFields.bankName = bankName ? String(bankName).trim() || null : null;
+  }
+  if (branchName !== undefined) {
+    updateFields.branchName = branchName ? String(branchName).trim() || null : null;
+  }
+  if (accountType !== undefined) {
+    const t = accountType ? String(accountType).trim() : '';
+    if (t && !['ordinary', 'checking', '普通', '当座'].includes(t)) {
+      throw new Error('口座種別が不正です');
+    }
+    const normalized =
+      t === '普通' ? 'ordinary' : t === '当座' ? 'checking' : t || null;
+    updateFields.accountType = normalized;
+  }
+  if (accountNumber !== undefined) {
+    const n = accountNumber ? String(accountNumber).replace(/\s/g, '') : '';
+    if (n && !/^\d{1,16}$/.test(n)) {
+      throw new Error('口座番号は数字のみで入力してください');
+    }
+    updateFields.accountNumber = n || null;
+  }
+  if (accountName !== undefined) {
+    updateFields.accountName = accountName ? String(accountName).trim() || null : null;
+  }
+
   const updatedWorker = await prisma.user.update({
     where: { id: userId },
     data: updateFields,
@@ -214,6 +260,13 @@ const updateWorkerProfile = async (userId, updateData) => {
       address: true,
       bio: true,
       hourlyRate: true,
+      serviceAreaText: true,
+      availabilityText: true,
+      bankName: true,
+      branchName: true,
+      accountType: true,
+      accountNumber: true,
+      accountName: true,
       rating: true,
       reviewCount: true,
       approvalStatus: true,

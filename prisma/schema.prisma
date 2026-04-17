@@ -26,6 +26,10 @@ model User {
   // ワーカー（Worker）用フィールド
   bio           String?   // 自己紹介
   hourlyRate    Int?      @map("hourly_rate") // 時給（円）
+  /// 対応エリアの自由記述（改行区切りなど）
+  serviceAreaText   String? @map("service_area_text") @db.Text
+  /// 利用可能時間の自由記述
+  availabilityText  String? @map("availability_text") @db.Text
   rating        Float?    @default(0) // 平均評価（0-5）
   reviewCount   Int       @default(0) @map("review_count")
   approvalStatus WorkerApprovalStatus @default(PENDING) @map("approval_status")
