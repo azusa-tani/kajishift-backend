@@ -108,72 +108,7 @@ const updateMe = async (userId, updateData) => {
   return user;
 };
 
-/**
- * ワーカーのプロフィールを更新
- */
-const updateWorkerProfile = async (userId, updateData) => {
-  const { bio, hourlyRate } = updateData;
-
-  // ユーザーがワーカーか確認
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true }
-  });
-
-  if (!user) {
-    throw new Error('ユーザーが見つかりません');
-  }
-
-  if (user.role !== 'WORKER') {
-    throw new Error('ワーカーのみプロフィールを更新できます');
-  }
-
-  const updateFields = {};
-
-  if (bio !== undefined) {
-    updateFields.bio = bio || null;
-  }
-
-  if (hourlyRate !== undefined) {
-    if (hourlyRate !== null && (isNaN(hourlyRate) || hourlyRate < 0)) {
-      throw new Error('時給は0以上の数値である必要があります');
-    }
-    updateFields.hourlyRate = hourlyRate || null;
-  }
-
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: updateFields,
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      phone: true,
-      role: true,
-      status: true,
-      address: true,
-      bio: true,
-      hourlyRate: true,
-      serviceAreaText: true,
-      availabilityText: true,
-      bankName: true,
-      branchName: true,
-      accountType: true,
-      accountNumber: true,
-      accountName: true,
-      rating: true,
-      reviewCount: true,
-      approvalStatus: true,
-      createdAt: true,
-      updatedAt: true
-    }
-  });
-
-  return updatedUser;
-};
-
 module.exports = {
   getUserById,
-  updateMe,
-  updateWorkerProfile
+  updateMe
 };

@@ -4,6 +4,86 @@
 
 const prisma = require('../config/database');
 
+/** service_area_text / availability_text の最大文字数 */
+const PROFILE_TEXT_MAX_LEN = 65535;
+
+const TIME_HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const TIME_END = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;
+
+/**
+ * フロントの選択式 UI が保存する JSON（v1）を検証。JSON でない場合は従来の自由記述としてそのまま通す。
+ * @param {string} label
+ * @param {string} raw
+ * @param {'area'|'availability'} kind
+ * @returns {string|null}
+ */
+function validateProfileTextField(label, raw, kind) {
+  if (raw == null) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  if (s.length > PROFILE_TEXT_MAX_LEN) {
+    throw new Error(`${label}は${PROFILE_TEXT_MAX_LEN}文字以内で入力してください`);
+  }
+  if (!s.startsWith('{')) {
+    return s;
+  }
+  let o;
+  try {
+    o = JSON.parse(s);
+  } catch {
+    throw new Error(`${label}（JSON）の形式が不正です`);
+  }
+  if (kind === 'area') {
+    if (o.v !== 1 || !Array.isArray(o.rows)) {
+      throw new Error(`${label}のJSONは { v:1, rows:[] } 形式である必要があります`);
+    }
+    if (o.rows.length > 50) {
+      throw new Error(`${label}は最大50行までです`);
+    }
+    o.rows.forEach((r, i) => {
+      const pref = String(r.pref || '').trim();
+      const city = String(r.city || '').trim();
+      const ward = String(r.ward || '').trim();
+      if (!pref) {
+        throw new Error(`${label} ${i + 1}行目: 都道府県（pref）が必要です`);
+      }
+      if (pref.length > 30 || city.length > 80 || ward.length > 160) {
+        throw new Error(`${label} ${i + 1}行目: 文字数が上限を超えています`);
+      }
+      if (!city && !ward) {
+        throw new Error(`${label} ${i + 1}行目: 市区町村（city）または区・町（ward）が必要です`);
+      }
+    });
+    return s;
+  }
+  if (o.v !== 1 || !Array.isArray(o.days)) {
+    throw new Error(`${label}のJSONは { v:1, days:[] } 形式である必要があります`);
+  }
+  const allowed = new Set(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+  if (o.days.length > 14) {
+    throw new Error(`${label}の days が多すぎます`);
+  }
+  o.days.forEach((d, i) => {
+    if (!d || typeof d.key !== 'string' || !allowed.has(d.key)) {
+      throw new Error(`${label} ${i + 1}件目: key（mon〜sun）が不正です`);
+    }
+    if (d.closed != null && typeof d.closed !== 'boolean') {
+      throw new Error(`${label} ${i + 1}件目: closed は真偽値である必要があります`);
+    }
+    if (!d.closed) {
+      const st = String(d.start || '').trim();
+      const en = String(d.end || '').trim();
+      if (!TIME_HHMM.test(st)) {
+        throw new Error(`${label}（${d.key}）の開始時刻の形式が不正です（HH:MM）`);
+      }
+      if (!TIME_END.test(en)) {
+        throw new Error(`${label}（${d.key}）の終了時刻の形式が不正です（HH:MM または 24:00）`);
+      }
+    }
+  });
+  return s;
+}
+
 /**
  * ワーカー一覧を取得（公開）
  * @param {object} filters - フィルター（approvalStatus, keyword, area, minHourlyRate, maxHourlyRate, minRating, page, limit）
@@ -35,11 +115,12 @@ const getWorkers = async (filters = {}) => {
     where.approvalStatus = 'APPROVED';
   }
 
-  // キーワード検索（名前、自己紹介）
+  // キーワード検索（名前、自己紹介、対応エリアテキスト）
   if (keyword) {
     where.OR = [
       { name: { contains: keyword, mode: 'insensitive' } },
-      { bio: { contains: keyword, mode: 'insensitive' } }
+      { bio: { contains: keyword, mode: 'insensitive' } },
+      { serviceAreaText: { contains: keyword, mode: 'insensitive' } }
     ];
   }
 
@@ -73,6 +154,7 @@ const getWorkers = async (filters = {}) => {
         name: true,
         bio: true,
         hourlyRate: true,
+        serviceAreaText: true,
         rating: true,
         reviewCount: true,
         approvalStatus: true,
@@ -214,11 +296,17 @@ const updateWorkerProfile = async (userId, updateData) => {
   }
 
   if (serviceAreaText !== undefined) {
-    updateFields.serviceAreaText = serviceAreaText ? String(serviceAreaText).trim() || null : null;
+    updateFields.serviceAreaText =
+      serviceAreaText === null || String(serviceAreaText).trim() === ''
+        ? null
+        : validateProfileTextField('対応エリア', serviceAreaText, 'area');
   }
 
   if (availabilityText !== undefined) {
-    updateFields.availabilityText = availabilityText ? String(availabilityText).trim() || null : null;
+    updateFields.availabilityText =
+      availabilityText === null || String(availabilityText).trim() === ''
+        ? null
+        : validateProfileTextField('利用可能時間', availabilityText, 'availability');
   }
 
   if (bankName !== undefined) {
