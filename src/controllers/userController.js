@@ -42,6 +42,24 @@ const updateMe = async (req, res, next) => {
 };
 
 /**
+ * パスワード変更（現在のパスワードを検証）
+ * PUT /api/users/me/password
+ */
+const changePassword = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body || {};
+    const result = await userService.changePassword(userId, { currentPassword, newPassword });
+    res.json({
+      message: result.message,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * ユーザー詳細を取得
  * GET /api/users/:id
  */
@@ -62,5 +80,6 @@ const getUserById = async (req, res, next) => {
 module.exports = {
   getMe,
   updateMe,
+  changePassword,
   getUserById
 };

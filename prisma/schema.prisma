@@ -60,7 +60,9 @@ model User {
   favoritedBy        Favorite[] @relation("WorkerFavorites") // このワーカーをお気に入りに追加しているユーザー
   creditCards        CreditCard[] // クレジットカード情報
   workerUnavailableSlots WorkerUnavailableSlot[]
-  
+  /// アプリ内メール通知などのユーザー別設定（JSON v1）
+  notificationPrefs Json? @map("notification_prefs")
+
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   

@@ -65,6 +65,36 @@ router.put('/me', authenticate, userController.updateMe);
 
 /**
  * @swagger
+ * /users/me/password:
+ *   put:
+ *     summary: パスワード変更（要現在のパスワード）
+ *     tags: [ユーザー]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currentPassword, newPassword]
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 変更成功
+ *       400:
+ *         description: バリデーションエラー
+ *       401:
+ *         description: 認証エラー
+ */
+router.put('/me/password', authenticate, userController.changePassword);
+
+/**
+ * @swagger
  * /users/{id}:
  *   get:
  *     summary: ユーザー詳細取得
