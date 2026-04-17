@@ -7,6 +7,8 @@ const bookingService = require('./bookingService');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 
+const { serializeBooking, WORKER_PROFILE_FILES } = bookingService;
+
 /**
  * 決済履歴を取得
  * @param {string} userId - ユーザーID
@@ -52,10 +54,12 @@ const getPayments = async (userId, userRole, filters = {}) => {
               select: {
                 id: true,
                 name: true,
-                email: true
-              }
-            }
-          }
+                email: true,
+                hourlyRate: true,
+                files: WORKER_PROFILE_FILES,
+              },
+            },
+          },
         },
         user: {
           select: {
@@ -75,7 +79,10 @@ const getPayments = async (userId, userRole, filters = {}) => {
   ]);
 
   return {
-    payments,
+    payments: payments.map((p) => ({
+      ...p,
+      booking: p.booking ? serializeBooking(p.booking) : p.booking,
+    })),
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),
@@ -165,10 +172,12 @@ const processPayment = async (bookingId, userId, paymentMethod, transactionId = 
               select: {
                 id: true,
                 name: true,
-                email: true
-              }
-            }
-          }
+                email: true,
+                hourlyRate: true,
+                files: WORKER_PROFILE_FILES,
+              },
+            },
+          },
         },
         user: {
           select: {
@@ -204,10 +213,12 @@ const processPayment = async (bookingId, userId, paymentMethod, transactionId = 
               select: {
                 id: true,
                 name: true,
-                email: true
-              }
-            }
-          }
+                email: true,
+                hourlyRate: true,
+                files: WORKER_PROFILE_FILES,
+              },
+            },
+          },
         },
         user: {
           select: {
@@ -262,7 +273,10 @@ const processPayment = async (bookingId, userId, paymentMethod, transactionId = 
     console.error('メール送信エラー:', error);
   }
 
-  return payment;
+  return {
+    ...payment,
+    booking: payment.booking ? serializeBooking(payment.booking) : payment.booking,
+  };
 };
 
 module.exports = {

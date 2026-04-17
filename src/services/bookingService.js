@@ -5,6 +5,35 @@
 const prisma = require('../config/database');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
+const uploadService = require('./uploadService');
+
+/** 予約レスポンスの worker に付けるプロフィール画像（File テーブル PROFILE_IMAGE の最新1件） */
+const WORKER_PROFILE_FILES = {
+  where: { fileType: 'PROFILE_IMAGE' },
+  orderBy: { createdAt: 'desc' },
+  take: 1,
+  select: { filePath: true },
+};
+
+/**
+ * Prisma の worker.files を API 用の profileImageUrl に変換（files はレスポンスに含めない）
+ * @param {object|null|undefined} worker
+ */
+function serializeBookingWorker(worker) {
+  if (!worker) return null;
+  const { files, ...rest } = worker;
+  const fp = Array.isArray(files) && files[0] && files[0].filePath;
+  const profileImageUrl = fp ? uploadService.getFileUrl(fp) : null;
+  return { ...rest, profileImageUrl };
+}
+
+/**
+ * @param {object} booking
+ */
+function serializeBooking(booking) {
+  if (!booking) return booking;
+  return { ...booking, worker: serializeBookingWorker(booking.worker) };
+}
 
 /** Express の qs やクライアントによりクエリ値が配列になることがあるため先頭要素を採用 */
 const firstQueryValue = (value) => {
@@ -147,9 +176,10 @@ const getBookings = async (userId, userRole, filters = {}) => {
             email: true,
             phone: true,
             hourlyRate: true,
-            rating: true
-          }
-        }
+            rating: true,
+            files: WORKER_PROFILE_FILES,
+          },
+        },
       },
       orderBy: {
         scheduledDate: 'desc'
@@ -161,7 +191,7 @@ const getBookings = async (userId, userRole, filters = {}) => {
   ]);
 
   return {
-    bookings,
+    bookings: bookings.map(serializeBooking),
     pagination: {
       page: pageNum,
       limit: limitNum,
@@ -199,8 +229,9 @@ const getBookingById = async (bookingId, userId, userRole) => {
           hourlyRate: true,
           rating: true,
           bio: true,
-          reviewCount: true
-        }
+          reviewCount: true,
+          files: WORKER_PROFILE_FILES,
+        },
       },
       review: {
         include: {
@@ -229,7 +260,7 @@ const getBookingById = async (bookingId, userId, userRole) => {
     }
   }
 
-  return booking;
+  return serializeBooking(booking);
 };
 
 /**
@@ -311,8 +342,9 @@ const createBooking = async (customerId, bookingData) => {
           id: true,
           name: true,
           email: true,
-          hourlyRate: true
-        }
+          hourlyRate: true,
+          files: WORKER_PROFILE_FILES,
+        },
       } : undefined
     }
   });
@@ -372,7 +404,7 @@ const createBooking = async (customerId, bookingData) => {
     console.error('メール送信エラー:', error);
   }
 
-  return booking;
+  return serializeBooking(booking);
 };
 
 /**
@@ -493,9 +525,10 @@ const updateBooking = async (bookingId, userId, userRole, updateData) => {
           id: true,
           name: true,
           email: true,
-          hourlyRate: true
-        }
-      }
+          hourlyRate: true,
+          files: WORKER_PROFILE_FILES,
+        },
+      },
     }
   });
 
@@ -585,7 +618,7 @@ const updateBooking = async (bookingId, userId, userRole, updateData) => {
     }
   }
 
-  return updatedBooking;
+  return serializeBooking(updatedBooking);
 };
 
 /**
@@ -625,9 +658,10 @@ const cancelBooking = async (bookingId, userId, userRole) => {
         select: {
           id: true,
           name: true,
-          email: true
-        }
-      }
+          email: true,
+          files: WORKER_PROFILE_FILES,
+        },
+      },
     }
   });
 
@@ -654,7 +688,7 @@ const cancelBooking = async (bookingId, userId, userRole) => {
     console.error('通知生成エラー:', error);
   }
 
-  return cancelledBooking;
+  return serializeBooking(cancelledBooking);
 };
 
 /**
@@ -733,9 +767,10 @@ const acceptBooking = async (bookingId, userId) => {
           id: true,
           name: true,
           email: true,
-          phone: true
-        }
-      }
+          phone: true,
+          files: WORKER_PROFILE_FILES,
+        },
+      },
     }
   });
 
@@ -753,7 +788,7 @@ const acceptBooking = async (bookingId, userId) => {
     console.error('通知生成エラー:', error);
   }
 
-  return acceptedBooking;
+  return serializeBooking(acceptedBooking);
 };
 
 /**
@@ -829,9 +864,10 @@ const rejectBooking = async (bookingId, userId, reason = null) => {
           id: true,
           name: true,
           email: true,
-          phone: true
-        }
-      }
+          phone: true,
+          files: WORKER_PROFILE_FILES,
+        },
+      },
     }
   });
 
@@ -853,7 +889,7 @@ const rejectBooking = async (bookingId, userId, reason = null) => {
     console.error('通知生成エラー:', error);
   }
 
-  return rejectedBooking;
+  return serializeBooking(rejectedBooking);
 };
 
 /**
@@ -928,9 +964,10 @@ const completeBooking = async (bookingId, userId) => {
           id: true,
           name: true,
           email: true,
-          phone: true
-        }
-      }
+          phone: true,
+          files: WORKER_PROFILE_FILES,
+        },
+      },
     }
   });
 
@@ -948,7 +985,7 @@ const completeBooking = async (bookingId, userId) => {
     console.error('通知生成エラー:', error);
   }
 
-  return completedBooking;
+  return serializeBooking(completedBooking);
 };
 
 module.exports = {
@@ -959,5 +996,8 @@ module.exports = {
   cancelBooking,
   acceptBooking,
   rejectBooking,
-  completeBooking
+  completeBooking,
+  /** 決済 API 等で booking.worker に profileImageUrl を付与する際に利用 */
+  serializeBooking,
+  WORKER_PROFILE_FILES,
 };
