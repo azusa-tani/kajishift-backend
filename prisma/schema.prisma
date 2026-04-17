@@ -55,11 +55,29 @@ model User {
   favorites          Favorite[] @relation("UserFavorites")
   favoritedBy        Favorite[] @relation("WorkerFavorites") // このワーカーをお気に入りに追加しているユーザー
   creditCards        CreditCard[] // クレジットカード情報
+  workerUnavailableSlots WorkerUnavailableSlot[]
   
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
   
   @@map("users")
+}
+
+// ワーカー本人の「利用不可」30分スロット（JST暦の日付 + slotIndex 0〜47）
+model WorkerUnavailableSlot {
+  id        String   @id @default(uuid())
+  workerId  String   @map("worker_id")
+  localDate String   @map("local_date") @db.VarChar(10) // Asia/Tokyo の暦日 YYYY-MM-DD
+  slotIndex Int      @map("slot_index") // 0=00:00-00:29 JST … 47=23:30-23:59 JST
+
+  worker User @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([workerId, localDate, slotIndex])
+  @@index([workerId, localDate])
+  @@map("worker_unavailable_slots")
 }
 
 // 予約

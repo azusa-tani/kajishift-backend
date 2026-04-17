@@ -1,0 +1,371 @@
+# ワーカー利用不可スロット API（OpenAPI 3.0 フラグメント）
+# メインの KAJISHIFT 定義に paths / components をマージするか、Swagger Editor で単体参照用に使用。
+openapi: 3.0.3
+info:
+  title: KAJISHIFT — Worker unavailable slots
+  version: 1.0.0
+  description: |
+    認証済みワーカー本人のみ。Base URL は既存 API と同じ（例 https://.../api）。
+    全リクエストに Header `Authorization: Bearer <JWT>`（ロール WORKER）。
+servers:
+  - url: http://localhost:3000/api
+    description: 開発例
+paths:
+  /workers/me/unavailable-slots:
+    get:
+      summary: 利用不可スロット一覧
+      tags: [WorkerUnavailableSlots]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: JST 暦 YYYY-MM-DD（範囲開始・含む）
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: JST 暦 YYYY-MM-DD（範囲終了・含む）
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: 単一作成 or 一括作成
+      tags: [WorkerUnavailableSlots]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateSingleBody'
+                - $ref: '#/components/schemas/CreateBatchBody'
+            examples:
+              single:
+                summary: 単一
+                value:
+                  date: '2026-04-15'
+                  slotIndex: 20
+              batch:
+                summary: 一括（localStorage 移行など）
+                value:
+                  items:
+                    - date: '2026-04-15'
+                      slotIndex: 20
+                    - '2026-04-16|10'
+                  continueOnError: true
+      responses:
+        '200':
+          description: 単一で既存あり / 一括完了
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CreateSingleResponse'
+                  - $ref: '#/components/schemas/CreateBatchResponse'
+        '201':
+          description: 単一新規作成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSingleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/ConflictBookingOverlap'
+    delete:
+      summary: 日付＋スロット index で削除
+      tags: [WorkerUnavailableSlots]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: slotIndex
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 47
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /workers/me/unavailable-slots/sync:
+    put:
+      summary: 期間内を全削除のうえ指定集合で置換
+      tags: [WorkerUnavailableSlots]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncBody'
+            example:
+              startDate: '2026-04-14'
+              endDate: '2026-04-20'
+              slots:
+                - date: '2026-04-15'
+                  slotIndex: 18
+                - '2026-04-16|40'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/ConflictBookingOverlap'
+  /workers/me/unavailable-slots/{id}:
+    delete:
+      summary: ID（UUID）で削除
+      tags: [WorkerUnavailableSlots]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Slot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          description: JST 暦 YYYY-MM-DD
+        slotIndex:
+          type: integer
+          minimum: 0
+          maximum: 47
+        slotKey:
+          type: string
+          example: '2026-04-15|20'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ListResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            slots:
+              type: array
+              items:
+                $ref: '#/components/schemas/Slot'
+    CreateSingleBody:
+      type: object
+      required: [date, slotIndex]
+      properties:
+        date:
+          type: string
+        localDate:
+          type: string
+          description: date と同義
+        slotIndex:
+          type: integer
+          minimum: 0
+          maximum: 47
+    CreateSingleResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            slot:
+              $ref: '#/components/schemas/Slot'
+            created:
+              type: boolean
+    CreateBatchBody:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            oneOf:
+              - type: object
+                required: [date, slotIndex]
+                properties:
+                  date:
+                    type: string
+                  slotIndex:
+                    type: integer
+              - type: string
+                description: 'YYYY-MM-DD|slotIndex'
+        continueOnError:
+          type: boolean
+          default: false
+    CreateBatchResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            created:
+              type: array
+              items:
+                $ref: '#/components/schemas/Slot'
+            skipped:
+              type: array
+              items:
+                type: object
+    SyncBody:
+      type: object
+      required: [startDate, endDate, slots]
+      properties:
+        startDate:
+          type: string
+        endDate:
+          type: string
+        slots:
+          type: array
+          items:
+            oneOf:
+              - type: object
+                required: [date, slotIndex]
+                properties:
+                  date:
+                    type: string
+                  slotIndex:
+                    type: integer
+              - type: string
+    SyncResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            slots:
+              type: array
+              items:
+                $ref: '#/components/schemas/Slot'
+    DeleteResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            deleted:
+              type: boolean
+            slot:
+              $ref: '#/components/schemas/Slot'
+    ErrorBody:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+  responses:
+    BadRequest:
+      description: バリデーションエラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'
+    Unauthorized:
+      description: 未認証・トークン無効
+    Forbidden:
+      description: WORKER 以外
+    NotFound:
+      description: 対象なし
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'
+    ConflictBookingOverlap:
+      description: 確定・進行中予約と重複
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorBody'
+              - type: object
+                properties:
+                  details:
+                    type: object
+                    properties:
+                      bookingId:
+                        type: string
+                        format: uuid

@@ -214,6 +214,15 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // ルート
 app.use('/api/auth', require('./routes/auth'));
 
+const { authenticate, authorize } = require('./middleware/auth');
+// ワーカー本人の利用不可（/workers/:id より前に登録して確実にマッチさせる）
+app.use(
+  '/api/workers/me/unavailable-slots',
+  authenticate,
+  authorize('WORKER'),
+  require('./routes/workerUnavailableSlots')
+);
+
 // その他のルート
 app.use('/api/users', require('./routes/users'));
 app.use('/api/bookings', require('./routes/bookings'));
