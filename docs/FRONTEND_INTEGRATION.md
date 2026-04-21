@@ -185,12 +185,15 @@ Content-Type: application/json
 | DELETE | `/api/bookings/:id` | 予約キャンセル | 必須 |
 
 **検索パラメータ（GET /api/bookings）:**
-- `status`: PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+- `status`: PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED（カンマ区切りで複数可）
+- `available`: `true` のとき **WORKER ロールのみ**有効。`workerId` が未設定の予約（新規案件）を取得。`status` 省略時は PENDING のみ。真偽値は `true` / `1` / `yes`（大文字小文字・前後空白は許容）。クエリが配列で届く場合は先頭要素を採用（`bookingService.getBookings` で正規化）
 - `serviceType`: サービス種別（例: 掃除・清掃、料理、洗濯、買い物代行）
-- `startDate`: 開始日（ISO形式、YYYY-MM-DD）
-- `endDate`: 終了日（ISO形式、YYYY-MM-DD）
+- `startDate`: 開始日（`YYYY-MM-DD` のとき **UTC の日始まり**で比較。DB の `scheduledDate` が UTC 0:00 保存であることと整合）
+- `endDate`: 終了日（`YYYY-MM-DD` のとき **UTC の日終わり**で比較）
 - `page`: ページ番号（デフォルト: 1）
 - `limit`: 1ページあたりの件数（デフォルト: 20）
+
+**実装メモ（2026-04-03）:** ワーカー向け「新しい仕事」一覧で空配列になる問題を防ぐため、`src/services/bookingService.js` の `getBookings` で上記の正規化（`available` / `status` / 日付）を行うよう変更済み。
 
 ### ワーカー管理API
 

@@ -671,6 +671,7 @@ socket.on('unread-count', (data) => {
   - `startDate`: 開始日（ISO形式、この日以降の予約を取得）
   - `endDate`: 終了日（ISO形式、この日以前の予約を取得）
   - `status`: ステータス（PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED）
+  - `available`: ワーカー向け未割り当て一覧用（`true` 相当）。**2026-04-03**: `getBookings` でクエリ値の正規化（配列先頭・真偽の別表記）、`YYYY-MM-DD` の UTC 日境界比較、`workerId` 未設定の明示条件を追加（`src/services/bookingService.js`）
 
 ### 4. ファイルアップロードAPI ✨ 実装完了
 **実装済みエンドポイント**:

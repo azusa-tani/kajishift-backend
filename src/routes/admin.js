@@ -240,6 +240,33 @@ router.get('/workers', adminController.getWorkers);
 
 /**
  * @swagger
+ * /admin/workers/{id}:
+ *   get:
+ *     summary: ワーカー詳細取得（管理者のみ）
+ *     tags: [管理者]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: ワーカー詳細取得成功
+ *       401:
+ *         description: 認証エラー
+ *       403:
+ *         description: 管理者のみアクセス可能
+ *       404:
+ *         description: ワーカーが見つかりません
+ */
+router.get('/workers/:id', adminController.getWorkerById);
+
+/**
+ * @swagger
  * /admin/workers/{id}/approve:
  *   put:
  *     summary: ワーカー承認（管理者のみ）

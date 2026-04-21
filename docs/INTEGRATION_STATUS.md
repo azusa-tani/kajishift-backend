@@ -111,7 +111,7 @@
 
 | エンドポイント | メソッド | 状態 | 備考 |
 |--------------|---------|------|------|
-| `/api/bookings` | GET | ✅ 連携済み・テスト完了 | 予約一覧取得、複数ステータス対応、available フィルター対応 |
+| `/api/bookings` | GET | ✅ 連携済み・テスト完了 | 予約一覧取得、複数ステータス対応、`available` フィルター（2026-04-03: クエリ正規化・日付UTC境界・未割り当て条件の明示化） |
 | `/api/bookings` | POST | ✅ 連携済み・テスト完了 | 予約作成 |
 | `/api/bookings/:id` | GET | ✅ 連携済み・テスト完了 | 予約詳細取得 |
 | `/api/bookings/:id` | PUT | ✅ 連携済み・テスト完了 | 予約更新（ワーカー選択含む） |
@@ -409,6 +409,7 @@
 
 - `available`フィルターを追加（ワーカー未割り当ての予約を取得）
 - 複数ステータスフィルター対応（カンマ区切り文字列を配列に変換）
+- **2026-04-03（`bookingService.getBookings`）**: `available` / `status` を配列・大小文字混在でも解釈できるよう正規化。`YYYY-MM-DD` の `startDate` / `endDate` は UTC の日境界で `scheduledDate` と比較。未割り当て条件は `workerId` の `equals: null` で明示。ページネーションの `page` / `limit` は `NaN` 回避
 
 ---
 

@@ -4,6 +4,8 @@
 
 ## 更新履歴
 
+- **2026年4月17日**: ワーカー本人のカレンダー「利用不可」スロットを API 化（`GET/POST/PUT/DELETE /api/workers/me/unavailable-slots`）。仕様は [`docs/WORKER_UNAVAILABLE_SLOTS_API.md`](./docs/WORKER_UNAVAILABLE_SLOTS_API.md) を参照。
+
 - **2026年3月26日**: Railway運用向けの接続・設定を更新
   - `src/index.js` のCORS設定を更新（`CORS_ORIGIN`優先、未設定時は `https://kajishift-frontend.vercel.app`）
   - `package.json` に Prisma seed設定を追加（`"prisma": { "seed": "node prisma/seed.js" }`）
@@ -117,7 +119,7 @@ npm start
 - `PUT /api/users/me` - 自分の情報更新
 
 ### 予約
-- `GET /api/bookings` - 予約一覧
+- `GET /api/bookings` - 予約一覧（クエリ `available` / 日付範囲の挙動は [`docs/FRONTEND_INTEGRATION.md`](./docs/FRONTEND_INTEGRATION.md) を参照。2026-04-03 に `bookingService.getBookings` を修正済み）
 - `POST /api/bookings` - 予約作成
 - `GET /api/bookings/:id` - 予約詳細
 

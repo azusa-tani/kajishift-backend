@@ -52,6 +52,23 @@ const getWorkers = async (req, res, next) => {
 };
 
 /**
+ * ワーカー詳細を取得（管理者のみ）
+ * GET /api/admin/workers/:id
+ */
+const getWorkerById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const worker = await adminService.getAdminWorkerById(id);
+
+    res.json({
+      data: worker
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * ワーカーを承認（管理者のみ）
  * PUT /api/admin/workers/:id/approve
  */
@@ -713,6 +730,7 @@ const registerAdmin = async (req, res, next) => {
 module.exports = {
   getUsers,
   getWorkers,
+  getWorkerById,
   approveWorker,
   updateUser,
   deleteUser,

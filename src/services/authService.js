@@ -10,6 +10,17 @@ const { validateEmail, validatePassword } = require('../utils/validators');
 const emailService = require('./emailService');
 
 /**
+ * クライアント起因のエラー（errorHandler が status を参照して 400 等を返す）
+ * @param {string} message
+ * @param {number} [status=400]
+ */
+function httpError(message, status = 400) {
+  const e = new Error(message);
+  e.status = status;
+  return e;
+}
+
+/**
  * ユーザー登録
  */
 const register = async (userData) => {
@@ -33,12 +44,12 @@ const register = async (userData) => {
 
   // バリデーション
   if (!validateEmail(email)) {
-    throw new Error('有効なメールアドレスを入力してください');
+    throw httpError('有効なメールアドレスを入力してください');
   }
 
   const passwordValidation = validatePassword(password);
   if (!passwordValidation.valid) {
-    throw new Error(passwordValidation.message);
+    throw httpError(passwordValidation.message);
   }
 
   // メールアドレスの重複チェック
@@ -47,7 +58,7 @@ const register = async (userData) => {
   });
 
   if (existingUser) {
-    throw new Error('このメールアドレスは既に登録されています');
+    throw httpError('このメールアドレスは既に登録されています');
   }
 
   // パスワードをハッシュ化
@@ -79,20 +90,28 @@ const register = async (userData) => {
     userDataToCreate.approvalStatus = 'PENDING';
   }
 
-  // ユーザーを作成
-  const user = await prisma.user.create({
-    data: userDataToCreate,
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      phone: true,
-      role: true,
-      status: true,
-      approvalStatus: true,
-      createdAt: true
+  // ユーザーを作成（競合時はユニーク制約で P2002 → 400）
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: userDataToCreate,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        role: true,
+        status: true,
+        approvalStatus: true,
+        createdAt: true
+      }
+    });
+  } catch (err) {
+    if (err && err.code === 'P2002') {
+      throw httpError('このメールアドレスは既に登録されています');
     }
-  });
+    throw err;
+  }
 
   // JWTトークンを生成
   const token = generateToken(user);

@@ -413,7 +413,8 @@ try {
 
 ### 予約APIの特殊な機能
 - **複数ステータスフィルター**: `status=PENDING,CONFIRMED`のようにカンマ区切りで指定可能
-- **available フィルター**: `available=true`でワーカー未割り当ての予約を取得
+- **available フィルター**: `available=true`（または `1` / `yes` 等）でワーカー未割り当ての予約を取得。**WORKER ロール時のみ**有効。Express のクエリが配列で届く場合もサーバー側で先頭要素を解釈（2026-04-03 `getBookings` 修正）
+- **日付範囲**: `startDate` / `endDate` が `YYYY-MM-DD` のときは UTC の開始・終了で `scheduledDate` と比較（DB が UTC 0:00 保存の前提）
 
 ### ワーカー登録の追加フィールド
 - `bio`（自己紹介）

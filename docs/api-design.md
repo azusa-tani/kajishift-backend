@@ -188,6 +188,20 @@ GET /api/workers/:id
 }
 ```
 
+#### ワーカー利用不可スロット（カレンダー週ビュー）
+
+認証済みワーカー本人のみ。`Authorization: Bearer <token>`、ロール `WORKER` 必須。
+
+```
+GET    /api/workers/me/unavailable-slots?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+POST   /api/workers/me/unavailable-slots
+PUT    /api/workers/me/unavailable-slots/sync
+DELETE /api/workers/me/unavailable-slots?date=YYYY-MM-DD&slotIndex=0-47
+DELETE /api/workers/me/unavailable-slots/:id
+```
+
+リクエスト／レスポンスの JSON 例・エラーコード・タイムゾーン契約・DB スキーマは [`WORKER_UNAVAILABLE_SLOTS_API.md`](./WORKER_UNAVAILABLE_SLOTS_API.md) に集約。
+
 ### 予約系
 
 #### 予約一覧取得
@@ -198,7 +212,9 @@ GET /api/bookings
 **認証:** 必須
 
 **クエリパラメータ:**
-- `status`: ステータスフィルター
+- `status`: ステータスフィルター（単一またはカンマ区切り）。文字列は正規化され大文字の enum と照合
+- `available`: ワーカー向け。`true` 相当で未割り当て（`workerId` IS NULL）の予約のみ。真偽は `true` / `1` / `yes` 等も許容（実装: `bookingService.js`）
+- `serviceType`, `startDate`, `endDate`: オプション。`YYYY-MM-DD` は UTC 日境界で日付範囲比較
 - `page`: ページ番号
 - `limit`: 1ページあたりの件数
 

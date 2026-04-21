@@ -130,6 +130,61 @@ const getWorkers = async (filters = {}) => {
 };
 
 /**
+ * ワーカー詳細を取得（管理者のみ）
+ * GET /api/admin/workers/:id
+ * 公開の GET /api/workers/:id より多くのフィールドを返す（連絡先・口座・本人確認など）
+ */
+const getAdminWorkerById = async (workerId) => {
+  const worker = await prisma.user.findFirst({
+    where: {
+      id: workerId,
+      role: 'WORKER'
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      phone: true,
+      address: true,
+      status: true,
+      bio: true,
+      hourlyRate: true,
+      rating: true,
+      reviewCount: true,
+      approvalStatus: true,
+      idDocumentUrl: true,
+      bankName: true,
+      branchName: true,
+      accountType: true,
+      accountNumber: true,
+      accountName: true,
+      serviceAreaText: true,
+      availabilityText: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
+
+  if (!worker) {
+    const err = new Error('ワーカーが見つかりません');
+    err.status = 404;
+    throw err;
+  }
+
+  const completedBookings = await prisma.booking.count({
+    where: {
+      workerId,
+      status: 'COMPLETED'
+    }
+  });
+
+  return {
+    ...worker,
+    completedBookings
+  };
+};
+
+/**
  * ワーカーを承認（管理者のみ）
  * @param {string} workerId - ワーカーID
  * @param {string} adminId - 管理者ID
@@ -1935,6 +1990,7 @@ module.exports = {
   registerAdmin,
   getUsers,
   getWorkers,
+  getAdminWorkerById,
   approveWorker,
   updateUser,
   deleteUser,
