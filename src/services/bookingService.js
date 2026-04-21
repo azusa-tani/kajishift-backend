@@ -247,16 +247,22 @@ const getBookingById = async (bookingId, userId, userRole) => {
   });
 
   if (!booking) {
-    throw new Error('予約が見つかりません');
+    const nf = new Error('予約が見つかりません');
+    nf.status = 404;
+    throw nf;
   }
 
   // 権限チェック：顧客またはワーカー、または管理者のみアクセス可能
   if (userRole !== 'ADMIN') {
     if (userRole === 'CUSTOMER' && booking.customerId !== userId) {
-      throw new Error('この予約にアクセスする権限がありません');
+      const e = new Error('この予約にアクセスする権限がありません');
+      e.status = 403;
+      throw e;
     }
     if (userRole === 'WORKER' && booking.workerId !== userId) {
-      throw new Error('この予約にアクセスする権限がありません');
+      const e = new Error('この予約にアクセスする権限がありません');
+      e.status = 403;
+      throw e;
     }
   }
 

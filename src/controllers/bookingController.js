@@ -35,6 +35,7 @@ const getBookings = async (req, res, next) => {
 /**
  * 予約詳細を取得
  * GET /api/bookings/:id
+ * 権限: bookingService 内で customerId / workerId と req.user の整合を検証済み
  */
 const getBookingById = async (req, res, next) => {
   try {
