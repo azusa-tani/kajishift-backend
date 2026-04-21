@@ -69,6 +69,9 @@ const { authenticate } = require('../middleware/auth');
 router.get('/', workerController.getWorkers);
 
 /**
+ * 認証不要: 依頼者（CUSTOMER）・未ログインからの閲覧用。ミドルウェアは付けないこと。
+ * （/workers/me/* は index.js で別マウント、PUT /workers/me は下で authenticate）
+ *
  * @swagger
  * /workers/{id}:
  *   get:

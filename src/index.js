@@ -41,8 +41,9 @@ app.use(helmetMiddleware);
 // レスポンス圧縮
 app.use(compression());
 
-// trust proxy設定（Renderなどのプロキシ経由のリクエストに対応）
-app.set('trust proxy', true);
+// リバースプロキシ（Railway / Render / Vercel 経由）でクライアント IP を正しく認識する
+// 数値 1 = 先頭のプロキシ 1 ホップを信頼（express-rate-limit の IP 判定と整合）
+app.set('trust proxy', 1);
 
 // CORS設定
 const corsOptions = {
