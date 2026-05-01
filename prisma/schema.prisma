@@ -99,7 +99,8 @@ model Booking {
   notes         String?       // 依頼者のメモ
   status        BookingStatus @default(PENDING)
   totalAmount   Int?          @map("total_amount") // 合計金額（円）
-  
+  completedAt   DateTime?     @map("completed_at")
+
   // リレーション
   customer      User          @relation("CustomerBookings", fields: [customerId], references: [id])
   worker        User?         @relation("WorkerBookings", fields: [workerId], references: [id])
