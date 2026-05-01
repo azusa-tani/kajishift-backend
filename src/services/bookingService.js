@@ -242,7 +242,15 @@ const getBookingById = async (bookingId, userId, userRole) => {
             }
           }
         }
-      }
+      },
+      payment: {
+        select: {
+          id: true,
+          status: true,
+          amount: true,
+          paymentMethod: true,
+        },
+      },
     }
   });
 
