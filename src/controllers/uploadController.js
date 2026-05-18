@@ -6,6 +6,12 @@ const uploadService = require('../services/uploadService');
 const path = require('path');
 const fs = require('fs');
 
+const withoutFileContent = (file) => {
+  if (!file) return file;
+  const { content, ...safeFile } = file;
+  return safeFile;
+};
+
 /**
  * ファイルをアップロード
  * POST /api/upload
@@ -58,7 +64,7 @@ const uploadFile = async (req, res, next) => {
     res.status(201).json({
       message: 'ファイルをアップロードしました',
       data: {
-        ...fileInfo,
+        ...withoutFileContent(fileInfo),
         url: fileUrl
       }
     });
@@ -89,7 +95,7 @@ const getFile = async (req, res, next) => {
 
     res.json({
       data: {
-        ...fileInfo,
+        ...withoutFileContent(fileInfo),
         url: fileUrl
       }
     });
@@ -153,7 +159,7 @@ const getUserFiles = async (req, res, next) => {
 
     // 各ファイルにURLを追加
     const filesWithUrl = result.files.map(file => ({
-      ...file,
+      ...withoutFileContent(file),
       url: uploadService.getFileUrl(file.filePath)
     }));
 
