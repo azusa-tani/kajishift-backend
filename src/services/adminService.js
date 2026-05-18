@@ -1436,7 +1436,9 @@ const deleteUser = async (userId) => {
 
   // 管理者は削除できない（セキュリティのため）
   if (user.role === 'ADMIN') {
-    throw new Error('管理者アカウントは削除できません');
+    const error = new Error('管理者アカウントは削除できません。無効化する場合はステータスをSUSPENDEDに変更してください');
+    error.status = 403;
+    throw error;
   }
 
   // 関連データの確認（予約、決済などがある場合は削除できない可能性がある）
