@@ -142,7 +142,7 @@ docker rm -f kajishift-postgres
 
    「Railway（本番・外部プロキシ経由）」の例：
    ```env
-   DATABASE_URL="postgresql://postgres:AufLObigdqOjMwYtoeNQWKbQnFESMAjI@caboose.proxy.rlwy.net:55164/railway"
+   DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<database>"
    ```
    - 外部から接続する場合の例です（Railwayダッシュボードの外部接続情報を使用）
    - 内部接続（同一Railway内サービス間）の場合は `postgres.railway.internal` のURLが提示されることがあります
@@ -342,7 +342,7 @@ curl http://localhost:3000/api/health
      -H "Content-Type: application/json" \
      -d '{
        "email": "test@example.com",
-       "password": "password123",
+       "password": "管理者から安全共有されたテスト用パスワード",
        "name": "テストユーザー",
        "role": "CUSTOMER"
      }'
@@ -354,7 +354,7 @@ curl http://localhost:3000/api/health
      -H "Content-Type: application/json" \
      -d '{
        "email": "test@example.com",
-       "password": "password123"
+       "password": "管理者から安全共有されたテスト用パスワード"
      }'
    ```
    

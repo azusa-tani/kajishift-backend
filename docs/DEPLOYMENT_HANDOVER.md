@@ -55,7 +55,7 @@
 - ✅ `CORS_ORIGIN`: `http://localhost:5500,https://kajishift-frontend.vercel.app`（Vercel移行に伴い更新済み）
 - ✅ その他の環境変数: 設定済み
 
-**注意**: フロントエンドがVercelに移行したため、`CORS_ORIGIN`はVercelのURLに更新されています。Renderダッシュボードで確認してください。
+**注意**: フロントエンドがVercelに移行したため、`CORS_ORIGIN`はVercelのURLに更新されています。Railwayダッシュボードで確認してください。
 
 #### 実装した変更
 1. **CORS設定の複数オリジン対応**
@@ -253,19 +253,19 @@ app.set('trust proxy', 1); // 最初のプロキシのみを信頼
 
 ### ログイン情報（テスト用）
 
-すべてのパスワードは `password123` です。
+すべてのパスワードは `管理者から安全共有されたテスト用パスワード` です。
 
 #### 依頼者（顧客）
-- `customer1@example.com` / `password123`
-- `customer2@example.com` / `password123`
+- `customer1@example.com` / `管理者から安全共有されたテスト用パスワード`
+- `customer2@example.com` / `管理者から安全共有されたテスト用パスワード`
 
 #### ワーカー
-- `worker1@example.com` / `password123`
-- `worker2@example.com` / `password123`
-- `worker3@example.com` / `password123`
+- `worker1@example.com` / `管理者から安全共有されたテスト用パスワード`
+- `worker2@example.com` / `管理者から安全共有されたテスト用パスワード`
+- `worker3@example.com` / `管理者から安全共有されたテスト用パスワード`
 
 #### 管理者
-- `admin@kajishift.com` / `password123`
+- `admin@kajishift.com` / `管理者から安全共有されたテスト用パスワード`
 
 **注意**: これらのユーザーはシードデータで作成されるため、本番データベースにシードデータが投入されていない場合は存在しません。
 
@@ -289,7 +289,7 @@ app.set('trust proxy', 1); // 最初のプロキシのみを信頼
 ### ログインエラーが発生する場合
 
 1. **Renderのログを確認**
-   - Renderダッシュボード → `kajishift-api` → 「Logs」タブ
+   - Railwayダッシュボード → `kajishift-api` → 「Logs」タブ
    - ログイン試行直後のエラーメッセージを確認
 
 2. **データベースの状態確認**

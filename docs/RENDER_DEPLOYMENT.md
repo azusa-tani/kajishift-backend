@@ -19,7 +19,7 @@
 
 ### ステップ2: PostgreSQLデータベースの作成
 
-1. Renderダッシュボードで「New +」をクリック
+1. Railwayダッシュボードで「New +」をクリック
 2. 「PostgreSQL」を選択
 3. 以下の設定を行う：
    - **Name**: `kajishift-db`（任意の名前）
@@ -32,7 +32,7 @@
 
 ### ステップ3: Webサービスの作成
 
-1. Renderダッシュボードで「New +」をクリック
+1. Railwayダッシュボードで「New +」をクリック
 2. 「Web Service」を選択
 3. GitHubリポジトリを接続
    - リポジトリを選択
@@ -169,7 +169,7 @@ FRONTEND_URL=https://your-frontend-domain.com
 
 ### カスタムドメインの設定（オプション）
 
-1. Renderダッシュボードでサービスを選択
+1. Railwayダッシュボードでサービスを選択
 2. 「Settings」タブを開く
 3. 「Custom Domains」セクションでドメインを追加
 4. DNS設定をRenderの指示に従って設定
@@ -194,7 +194,7 @@ FRONTEND_URL=https://your-frontend-domain.com
 
 ### 手動デプロイ
 
-1. Renderダッシュボードでサービスを選択
+1. Railwayダッシュボードでサービスを選択
 2. 「Manual Deploy」をクリック
 3. デプロイしたいブランチとコミットを選択
 
@@ -202,7 +202,7 @@ FRONTEND_URL=https://your-frontend-domain.com
 
 ### ログの確認
 
-1. Renderダッシュボードでサービスを選択
+1. Railwayダッシュボードでサービスを選択
 2. 「Logs」タブでリアルタイムログを確認
 
 ### メトリクスの確認

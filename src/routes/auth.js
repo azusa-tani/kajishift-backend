@@ -38,7 +38,7 @@ const { uploadSingle } = require('../middleware/upload');
  *               password:
  *                 type: string
  *                 minLength: 6
- *                 example: password123
+ *                 example: KajiShiftLocalDev!2026
  *               name:
  *                 type: string
  *                 example: 山田 太郎
@@ -98,7 +98,7 @@ router.post('/register', authLimiter, uploadSingle('idDocument'), authController
  *                 example: user@example.com
  *               password:
  *                 type: string
- *                 example: password123
+ *                 example: KajiShiftLocalDev!2026
  *     responses:
  *       200:
  *         description: ログイン成功
@@ -215,7 +215,7 @@ router.post('/forgot-password', passwordResetLimiter, authController.forgotPassw
  *                 type: string
  *                 minLength: 6
  *                 description: 新しいパスワード
- *                 example: newpassword123
+ *                 example: newKajiShiftLocalDev!2026
  *     responses:
  *       200:
  *         description: パスワードリセット成功

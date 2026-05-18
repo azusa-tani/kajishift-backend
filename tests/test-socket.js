@@ -14,7 +14,7 @@ const http = require('http');
 const SERVER_URL = 'http://localhost:3000';
 // test-api.jsと同じユーザー情報を使用
 const TEST_USER_EMAIL = 'test@example.com'; // テスト用のユーザー
-const TEST_USER_PASSWORD = 'password123';
+const TEST_USER_PASSWORD = 'KajiShiftLocalDev!2026';
 
 console.log('🔌 Socket.ioリアルタイム通知機能のテストを開始します...\n');
 

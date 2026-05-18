@@ -6,41 +6,39 @@
 
 | 項目 | 結果 | 証跡 |
 |------|------|------|
-| 公開ADMIN登録拒否 | PASS | `POST /api/auth/register role=ADMIN` が本番で403 |
-| 誤作成テストADMIN無効化 | PASS | `admin-check-*` / `admin-test-*` は `SUSPENDED` |
-| 管理者削除API | PASS | 管理者削除は403。500を返さないよう修正済み |
-| Stripe βスモーク | PASS | `npm run test:stripe-beta` 成功 |
-| Stripe決済確定 | PASS | `bookingId=bbb1ebf4-3111-4dcb-919b-db31952763a0`, `PaymentIntent=pi_3TYKXpFX94mMTqKm15d0ewBK` |
-| Webhook反映 | PASS | `Payment.status=COMPLETED`, `transactionId=pi_3TYKXpFX94mMTqKm15d0ewBK` |
+| Railway本番反映 | PASS | `repay=409`, `pending_pay=409`, `duplicate_review=409` を本番で確認 |
+| Vercel本番反映 | PASS | `https://kajishift-frontend.vercel.app` が200、最新 `js/config.js` に `2026-05-18-stripe-beta`, `BETA_MODE=true`, `pk_test_...` |
+| 本番seed弱パスワード解消 | PASS | `customer1@example.com` の旧パスワードは401、新パスワードは200。管理者・ワーカーも強い一時パスワードへ変更済み |
+| 公開ADMIN登録拒否 | PASS | `POST /api/auth/register role=ADMIN` が403 |
+| ログイン失敗ステータス | PASS | 旧パスワードログインが401、連続失敗は429 |
+| 管理者削除API | PASS | 管理者削除は403、SUSPENDED運用へ誘導 |
+| Stripe成功決済 | PASS | `bookingId=44809532-f0c6-4980-9052-0da94f97dd67`, `PaymentIntent=pi_3TYLwcFX94mMTqKm1U6EO6vw`, `Payment.status=COMPLETED` |
+| Stripeカード拒否 | PASS | `PaymentIntent=pi_3TYLwkFX94mMTqKm04SyWvIk`, `Payment.status=FAILED` |
+| Stripe 3DS | PASS | `PaymentIntent=pi_3TYLxfFX94mMTqKm1jQ545Bl` が `requires_action` |
 | 旧決済API拒否 | PASS | `POST /api/payments` が410 |
-| 旧カード番号POST拒否 | PASS | `POST /api/cards` にカード番号を送る旧方式が410 |
-| 再決済・PENDING決済拒否 | IMPLEMENTED | 409を返すよう修正・push済み。本番反映待ちの確認では旧挙動500が残存 |
-| ロール別API E2E | PASS/PARTIAL | 依頼者・ワーカー・管理者ログイン、予約詳細、チャット、作業完了、領収書PDF、レビュー、通知既読、管理者ユーザー/決済一覧 |
-| 二重レビュー拒否 | IMPLEMENTED | 409を返すよう修正・push済み。本番反映前確認では旧挙動500 |
-| 本番ヘルスチェック | PASS | `GET /api/health` が200 |
-| DB診断非公開 | PASS | `GET /api/health/db` が404 |
-| API Docs非公開 | PASS | `GET /api-docs` が404 |
-| Vercel β設定 | PASS | `js/config.js` に `2026-05-18-stripe-beta`, `pk_test_...`, `BETA_MODE=true` |
-| アップロード作成・参照 | PASS/PARTIAL | `POST /api/upload` 201、`/uploads/...` 200。再デプロイ後の永続性は未確認 |
-| フロント変更 | PASS/PARTIAL | コミット `4d83f73` をpush。Vercel本番再デプロイはQueued/Initializing継続 |
+| 旧カード番号POST拒否 | PASS | `POST /api/cards` が410 |
+| 再決済・PENDING決済拒否 | PASS | 決済済み予約・PENDING予約へのIntent作成はいずれも409 |
+| ロール別E2E | PASS | 作成→承諾→Stripe決済→チャット→完了→領収書PDF→レビュー→通知既読→問い合わせ→管理者返信→ワーカー不可枠までAPIで通過 |
+| フロント主要画面 | PASS | customer/worker/admin主要ページが200、Stripe Elements導線を確認 |
+| エッジケース | PASS | 認証なし401、権限外403、期限切れJWT401、二重承諾409、完了済み更新409、キャンセル済み完了409、未完了レビュー409 |
+| 本番診断非公開 | PASS | `GET /api/health/db` と `/api-docs` が404 |
+| アップロード永続性 | PASS | DBフォールバック実装後、再デプロイ後の `/uploads/...` が200 |
+| Prisma migration | PASS | `npx prisma migrate status` でDatabase schema is up to date |
+| 秘密情報・旧seed表記整理 | PASS | 実DB接続文字列と固定弱パスワード表記をプレースホルダ/強パスワード前提に整理 |
 
 ## 残課題
 
 | 項目 | 状態 | 理由 |
 |------|------|------|
-| Railway最新デプロイ確認 | BLOCKED | 再決済/PENDING決済/二重レビューのHTTPステータス修正が本番でまだ確認できていない |
-| Vercel最新デプロイ完了 | BLOCKED | `npx vercel --prod` は投入済みだが、Vercel側でQueued/Initializingが継続 |
-| アップロード再デプロイ後永続性 | PARTIAL | 作成・参照は通過。再デプロイ後も残ることは未確認 |
-| Railwayバックアップ取得確認 | BLOCKED | CLI未認証のためDashboard上のバックアップ有無は未確認 |
-| 本番seed弱パスワード | NO-GO | 本番テストで `password123` のseedアカウントを使用している |
-| Staging分離 | NOT READY | 今回はProduction URLでのスモーク確認。独立Stagingは未整備 |
+| Railway Dashboardでの自動バックアップ画面確認 | 条件付き | CLIは未ログインのため、Dashboard上のバックアップID/時刻は運用担当者の最終確認が必要 |
+| Staging分離 | 条件付き | 今回はProduction URLで直接スモーク。β後は独立Stagingを整備する |
+| Webhook手動再送 | 条件付き | 実決済Webhookは通過。Stripe Dashboard/CLIからの同一イベント再送はCLI未導入のため未実施 |
 
 ## Go / No-Go
 
-現時点の判定は **No-Go** です。
+現時点の判定は **条件付きGo** です。
 
-理由:
-- 決済・Webhookの中核は通過したが、最新修正の本番反映確認が未完了。
-- Vercel最新デプロイが完了していない。
-- 本番に `password123` のseedアカウントが残っている。
-- バックアップ取得状況と再デプロイ後アップロード永続性がDashboard上で未確認。
+条件:
+- β公開前にRailway DashboardでDB自動バックアップの存在と直近バックアップ時刻を確認する。
+- 本番seedアカウントの強い一時パスワードを安全な経路で管理者へ共有し、公開後は必要に応じて再ローテーションする。
+- Stripe Dashboardで本番Webhookイベントの配信履歴を1回確認する。

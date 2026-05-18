@@ -69,7 +69,7 @@ async function main() {
 
   const adminRegister = await request('POST', '/auth/register', {
     email: `admin-test-${Date.now()}@example.com`,
-    password: 'password123',
+    password: 'KajiShiftLocalDev!2026',
     name: 'Admin Test',
     role: 'ADMIN'
   });

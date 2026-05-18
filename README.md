@@ -47,7 +47,7 @@ NODE_ENV=development
 # データベース（PostgreSQL）
 DATABASE_URL="postgresql://username:password@localhost:5432/kajishift?schema=public"
 # 本番（Railway 外部プロキシ例）
-# DATABASE_URL="postgresql://postgres:AufLObigdqOjMwYtoeNQWKbQnFESMAjI@caboose.proxy.rlwy.net:55164/railway"
+# DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<database>"
 
 # JWT認証
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production

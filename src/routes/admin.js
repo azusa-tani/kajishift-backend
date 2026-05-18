@@ -83,7 +83,7 @@ router.get('/users', adminController.getUsers);
  *               password:
  *                 type: string
  *                 minLength: 6
- *                 example: password123
+ *                 example: KajiShiftLocalDev!2026
  *               name:
  *                 type: string
  *                 example: 新規管理者

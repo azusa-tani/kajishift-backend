@@ -366,16 +366,16 @@ kajishift-frontend/
 
 ### 作成されるデータ
 - **顧客**: 2名
-  - `customer1@example.com` / `password123`
-  - `customer2@example.com` / `password123`
+  - `customer1@example.com` / `管理者から安全共有されたテスト用パスワード`
+  - `customer2@example.com` / `管理者から安全共有されたテスト用パスワード`
 
 - **ワーカー**: 3名
-  - `worker1@example.com` / `password123`
-  - `worker2@example.com` / `password123`
-  - `worker3@example.com` / `password123`
+  - `worker1@example.com` / `管理者から安全共有されたテスト用パスワード`
+  - `worker2@example.com` / `管理者から安全共有されたテスト用パスワード`
+  - `worker3@example.com` / `管理者から安全共有されたテスト用パスワード`
 
 - **管理者**: 1名
-  - `admin@example.com` / `password123`
+  - `admin@example.com` / `管理者から安全共有されたテスト用パスワード`
 
 - **予約**: 6件（様々なステータス）
 - **その他**: レビュー、決済、メッセージ、通知など

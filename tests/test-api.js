@@ -86,7 +86,7 @@ async function runTests() {
   try {
     const registerData = {
       email: 'test@example.com',
-      password: 'password123',
+      password: 'KajiShiftLocalDev!2026',
       name: 'テストユーザー',
       role: 'CUSTOMER',
     };
@@ -103,7 +103,7 @@ async function runTests() {
       try {
         const loginData = {
           email: 'test@example.com',
-          password: 'password123'
+          password: 'KajiShiftLocalDev!2026'
         };
         const loginResult = await makeRequest('POST', '/auth/login', loginData);
         if (loginResult.status === 200 && loginResult.data.data && loginResult.data.data.token) {
@@ -129,7 +129,7 @@ async function runTests() {
     try {
       const loginData = {
         email: 'test@example.com',
-        password: 'password123'
+        password: 'KajiShiftLocalDev!2026'
       };
       const loginResult = await makeRequest('POST', '/auth/login', loginData);
       if (loginResult.status === 200 && loginResult.data.data && loginResult.data.data.token) {
@@ -147,7 +147,7 @@ async function runTests() {
   try {
     const loginData = {
       email: 'test@example.com',
-      password: 'password123',
+      password: 'KajiShiftLocalDev!2026',
     };
     const result = await makeRequest('POST', '/auth/login', loginData);
     const success = result.status === 200;
@@ -352,7 +352,7 @@ async function runTests() {
   try {
     const workerRegisterData = {
       email: 'worker@example.com',
-      password: 'password123',
+      password: 'KajiShiftLocalDev!2026',
       name: 'テストワーカー',
       role: 'WORKER'
     };
@@ -370,7 +370,7 @@ async function runTests() {
       try {
         const loginData = {
           email: 'worker@example.com',
-          password: 'password123'
+          password: 'KajiShiftLocalDev!2026'
         };
         const loginResult = await makeRequest('POST', '/auth/login', loginData);
         if (loginResult.status === 200 && loginResult.data.data && loginResult.data.data.token) {
@@ -398,7 +398,7 @@ async function runTests() {
     try {
       const loginData = {
         email: 'worker@example.com',
-        password: 'password123'
+        password: 'KajiShiftLocalDev!2026'
       };
       const loginResult = await makeRequest('POST', '/auth/login', loginData);
       if (loginResult.status === 200 && loginResult.data.data && loginResult.data.data.token) {
@@ -710,7 +710,7 @@ async function runTests() {
   try {
     const adminRegisterData = {
       email: 'admin@example.com',
-      password: 'password123',
+      password: 'KajiShiftLocalDev!2026',
       name: 'テスト管理者',
       role: 'ADMIN'
     };
@@ -723,7 +723,7 @@ async function runTests() {
       // 既に存在する場合はログインを試みる
       const adminLoginData = {
         email: 'admin@example.com',
-        password: 'password123'
+        password: 'KajiShiftLocalDev!2026'
       };
       const adminLoginResult = await makeRequest('POST', '/auth/login', adminLoginData);
       if (adminLoginResult.status === 200 && adminLoginResult.data.data && adminLoginResult.data.data.token) {

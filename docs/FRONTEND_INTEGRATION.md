@@ -59,7 +59,7 @@ Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "password": "password123",
+  "password": "管理者から安全共有されたテスト用パスワード",
   "name": "山田 太郎",
   "phone": "090-1234-5678",
   "role": "CUSTOMER"  // CUSTOMER, WORKER, ADMIN
@@ -90,7 +90,7 @@ Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "password": "password123"
+  "password": "管理者から安全共有されたテスト用パスワード"
 }
 ```
 
@@ -148,7 +148,7 @@ Content-Type: application/json
 
 {
   "token": "reset-token-from-email",
-  "password": "newpassword123"
+  "password": "new管理者から安全共有されたテスト用パスワード"
 }
 ```
 
@@ -766,7 +766,7 @@ class ApiClient {
 
 // 使用例
 const api = new ApiClient();
-await api.login('user@example.com', 'password123');
+await api.login('user@example.com', '管理者から安全共有されたテスト用パスワード');
 const user = await api.getMe();
 const bookings = await api.getBookings({ page: 1, limit: 20 });
 ```

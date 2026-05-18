@@ -23,11 +23,15 @@ if (!process.env.DATABASE_URL) {
 }
 
 // DATABASE_URLの確認（本番環境かどうか）
-if (!process.env.DATABASE_URL.includes('onrender.com') && !process.env.DATABASE_URL.includes('render.com')) {
-  console.log('⚠️  警告: DATABASE_URLが本番環境（Render）のものではない可能性があります');
-  console.log(`現在のDATABASE_URL: ${process.env.DATABASE_URL.substring(0, 50)}...`);
+if (!process.env.DATABASE_URL.includes('railway') && !process.env.DATABASE_URL.includes('rlwy.net')) {
+  console.log('⚠️  警告: DATABASE_URLが本番環境（Railway）のものではない可能性があります');
   console.log('');
   // 非対話モードのため、警告のみ表示して続行
+}
+
+if (!process.env.SEED_PASSWORD || process.env.SEED_PASSWORD.length < 16) {
+  console.error('❌ エラー: 本番seedには16文字以上のSEED_PASSWORD環境変数が必要です');
+  process.exit(1);
 }
 
 console.log('✅ DATABASE_URLが設定されています');
@@ -64,15 +68,15 @@ try {
   console.log('========================================');
   console.log('');
   console.log('📋 作成されたテストユーザー:');
-  console.log('  依頼者1: customer1@example.com / password123');
-  console.log('  依頼者2: customer2@example.com / password123');
-  console.log('  ワーカー1: worker1@example.com / password123');
-  console.log('  ワーカー2: worker2@example.com / password123');
-  console.log('  ワーカー3: worker3@example.com / password123');
-  console.log('  管理者: admin@kajishift.com / password123');
+  console.log('  依頼者1: customer1@example.com / SEED_PASSWORD');
+  console.log('  依頼者2: customer2@example.com / SEED_PASSWORD');
+  console.log('  ワーカー1: worker1@example.com / SEED_PASSWORD');
+  console.log('  ワーカー2: worker2@example.com / SEED_PASSWORD');
+  console.log('  ワーカー3: worker3@example.com / SEED_PASSWORD');
+  console.log('  管理者: admin@kajishift.com / SEED_PASSWORD');
   console.log('');
   console.log('🔍 確認方法:');
-  console.log('  https://kajishift-backend-production.up.railway.app/api/health/db');
+  console.log('  https://kajishift-backend-production.up.railway.app/api/health');
   console.log('');
 } catch (error) {
   console.error('');

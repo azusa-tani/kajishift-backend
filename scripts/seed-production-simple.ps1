@@ -48,12 +48,12 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "作成されたテストユーザー:" -ForegroundColor Cyan
-    Write-Host "  依頼者1: customer1@example.com / password123"
-    Write-Host "  依頼者2: customer2@example.com / password123"
-    Write-Host "  ワーカー1: worker1@example.com / password123"
-    Write-Host "  ワーカー2: worker2@example.com / password123"
-    Write-Host "  ワーカー3: worker3@example.com / password123"
-    Write-Host "  管理者: admin@kajishift.com / password123"
+    Write-Host "  依頼者1: customer1@example.com / KajiShiftLocalDev!2026"
+    Write-Host "  依頼者2: customer2@example.com / KajiShiftLocalDev!2026"
+    Write-Host "  ワーカー1: worker1@example.com / KajiShiftLocalDev!2026"
+    Write-Host "  ワーカー2: worker2@example.com / KajiShiftLocalDev!2026"
+    Write-Host "  ワーカー3: worker3@example.com / KajiShiftLocalDev!2026"
+    Write-Host "  管理者: admin@kajishift.com / KajiShiftLocalDev!2026"
     Write-Host ""
     Write-Host "確認方法: https://kajishift-backend-production.up.railway.app/api/health/db"
     Write-Host ""

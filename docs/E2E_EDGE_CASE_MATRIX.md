@@ -65,3 +65,32 @@
 | E-X02 | 二重レビュー | 4xx |
 | E-X03 | ログイン失敗 6 回 | 429 |
 | E-X04 | 本番 `GET /api/health/db` / `/api-docs` | 404 |
+
+## 2026-05-18 実行結果
+
+| ID | 結果 | 証跡 |
+|----|------|------|
+| E-A01 | PASS | トークンなし `GET /api/bookings` が401 |
+| E-A02 | PASS | 依頼者トークンで `POST /api/bookings/:id/complete` が403 |
+| E-A03 | PASS | 公開登録 `role=ADMIN` が403 |
+| E-A05 | PASS | 他ユーザー予約詳細が403 |
+| E-A06 | PASS | 期限切れJWTが401 |
+| E-B01 | PASS | PENDING予約の `POST /api/payments/intent` が409 |
+| E-B02 | PASS | 二重承諾の2件目が409 |
+| E-B04 | PASS | COMPLETED予約更新が409 |
+| E-B05 | PASS | CANCELLED予約の作業完了が409 |
+| E-B06 | PASS | 依頼者の `available=true` は通常一覧として200 |
+| E-B07 | PASS | `startDate` / `endDate` 指定で200 |
+| E-P01 | PASS | `pi_3TYLwcFX94mMTqKm1U6EO6vw` がsucceeded、DBはCOMPLETED |
+| E-P02 | PASS | `pi_3TYLwkFX94mMTqKm04SyWvIk` がcard_declined、DBはFAILED |
+| E-P03 | PASS | `pi_3TYLxfFX94mMTqKm1jQ545Bl` がrequires_action |
+| E-P05 | 条件付き | 実Webhook反映はPASS。Stripe Dashboard/CLIからの同一イベント再送は公開直前運用確認 |
+| E-P08 | PASS | 決済済み予約の再Intentが409 |
+| E-P09 | PASS | 存在しない/未完了領収書が404/409系4xx |
+| E-P10 | PASS | 日本語フォント入りPDFが200で生成 |
+| E-R03 | PASS | DBフォールバック実装後、再デプロイ後の `/uploads/...` が200 |
+| E-R04 | PASS | チャット当事者以外の取得が403 |
+| E-X01 | PASS | 未完了予約へのレビューが409 |
+| E-X02 | PASS | 二重レビューが409 |
+| E-X03 | PASS | ログイン連続失敗で429 |
+| E-X04 | PASS | 本番 `GET /api/health/db` / `/api-docs` が404 |

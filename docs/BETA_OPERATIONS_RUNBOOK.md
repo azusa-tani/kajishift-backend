@@ -22,8 +22,8 @@
 | `STRIPE_SECRET_KEY` | `sk_test_...` |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` |
 | `STRIPE_PUBLISHABLE_KEY` | `pk_test_...` |
-| `UPLOAD_DIR` | Railway Volume のマウント先 |
-| `CLOUD_STORAGE_URL` | アップロードファイル公開 URL |
+| `UPLOAD_DIR` | 任意。Railway Volume を使う場合のマウント先 |
+| `CLOUD_STORAGE_URL` | 任意。外部ストレージを使う場合の公開 URL |
 
 ## 本番 seed 禁止
 
@@ -43,7 +43,17 @@ Production DB では `npm run seed` を実行しない。βユーザーは招待
 
 - Railway PostgreSQL の自動バックアップを有効にする。
 - リストア手順を本番公開前に Staging で 1 回検証する。
-- アップロードファイルは `UPLOAD_DIR` が永続 Volume を指すことを確認する。
+- アップロードファイルはDB `files.content` にも保存するため、再デプロイ後も `/uploads/...` で復旧できる。
+- Railway Volume または外部ストレージを併用する場合は `UPLOAD_DIR` / `CLOUD_STORAGE_URL` を設定する。
+
+## 2026-05-18 運用確認
+
+- `npx prisma migrate deploy` で `20260518083000_add_file_content` を適用済み。
+- `npx prisma migrate status` でDatabase schema is up to dateを確認。
+- DBフォールバック実装前は再デプロイ後 `/uploads/...` が404。
+- DBフォールバック実装後は再デプロイ後 `/uploads/...` が200。
+- VercelはReadyデプロイを `https://kajishift-frontend.vercel.app` にAlias済み。
+- Railway CLIは未ログインのため、Dashboard上のバックアップID/時刻は公開直前に運用担当者が確認する。
 
 ## Stripe Webhook 再送対応
 

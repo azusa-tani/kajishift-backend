@@ -22,7 +22,7 @@ POST /api/auth/register
 ```json
 {
   "email": "user@example.com",
-  "password": "password123",
+  "password": "管理者から安全共有されたテスト用パスワード",
   "name": "山田 太郎",
   "phone": "090-1234-5678",
   "role": "customer" // "customer" | "worker"
@@ -55,7 +55,7 @@ POST /api/auth/login
 ```json
 {
   "email": "user@example.com",
-  "password": "password123"
+  "password": "管理者から安全共有されたテスト用パスワード"
 }
 ```
 
@@ -342,7 +342,7 @@ POST /api/admin/register
 ```json
 {
   "email": "newadmin@kajishift.com",
-  "password": "password123",
+  "password": "管理者から安全共有されたテスト用パスワード",
   "name": "新規管理者",
   "phone": "090-1234-5678"
 }

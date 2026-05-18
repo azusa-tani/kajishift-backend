@@ -85,12 +85,12 @@ if ($seedExitCode -eq 0) {
     Write-Host "========================================" -ForegroundColor Green
     Write-Host ""
     Write-Host "📋 作成されたテストユーザー:" -ForegroundColor Cyan
-    Write-Host "  依頼者1: customer1@example.com / password123" -ForegroundColor White
-    Write-Host "  依頼者2: customer2@example.com / password123" -ForegroundColor White
-    Write-Host "  ワーカー1: worker1@example.com / password123" -ForegroundColor White
-    Write-Host "  ワーカー2: worker2@example.com / password123" -ForegroundColor White
-    Write-Host "  ワーカー3: worker3@example.com / password123" -ForegroundColor White
-    Write-Host "  管理者: admin@kajishift.com / password123" -ForegroundColor White
+    Write-Host "  依頼者1: customer1@example.com / KajiShiftLocalDev!2026" -ForegroundColor White
+    Write-Host "  依頼者2: customer2@example.com / KajiShiftLocalDev!2026" -ForegroundColor White
+    Write-Host "  ワーカー1: worker1@example.com / KajiShiftLocalDev!2026" -ForegroundColor White
+    Write-Host "  ワーカー2: worker2@example.com / KajiShiftLocalDev!2026" -ForegroundColor White
+    Write-Host "  ワーカー3: worker3@example.com / KajiShiftLocalDev!2026" -ForegroundColor White
+    Write-Host "  管理者: admin@kajishift.com / KajiShiftLocalDev!2026" -ForegroundColor White
     Write-Host ""
     Write-Host "🔍 確認方法:" -ForegroundColor Cyan
     Write-Host "  https://kajishift-backend-production.up.railway.app/api/health/db" -ForegroundColor White

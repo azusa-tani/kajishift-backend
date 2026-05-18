@@ -24,8 +24,12 @@ async function main() {
   await prisma.passwordResetToken.deleteMany();
   await prisma.user.deleteMany();
 
-  // パスワードハッシュ（すべてのユーザーで "password123" を使用）
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  const seedPassword = process.env.SEED_PASSWORD || 'KajiShiftLocalDev!2026';
+  if (process.env.NODE_ENV === 'production' && !process.env.SEED_PASSWORD) {
+    throw new Error('本番seedにはSEED_PASSWORD環境変数で強い一時パスワードを指定してください');
+  }
+  // β本番で弱い固定パスワードを残さないため、seedパスワードは環境変数で注入する。
+  const hashedPassword = await bcrypt.hash(seedPassword, 10);
 
   // ==================== ユーザー作成 ====================
   console.log('👥 ユーザーを作成中...');
@@ -428,12 +432,12 @@ async function main() {
   console.log('  - 通知: 2件');
   console.log('  - お気に入り: 2件');
   console.log('\n🔑 ログイン情報:');
-  console.log('  依頼者1: customer1@example.com / password123');
-  console.log('  依頼者2: customer2@example.com / password123');
-  console.log('  ワーカー1: worker1@example.com / password123');
-  console.log('  ワーカー2: worker2@example.com / password123');
-  console.log('  ワーカー3: worker3@example.com / password123');
-  console.log('  管理者: admin@kajishift.com / password123');
+  console.log('  依頼者1: customer1@example.com / SEED_PASSWORD');
+  console.log('  依頼者2: customer2@example.com / SEED_PASSWORD');
+  console.log('  ワーカー1: worker1@example.com / SEED_PASSWORD');
+  console.log('  ワーカー2: worker2@example.com / SEED_PASSWORD');
+  console.log('  ワーカー3: worker3@example.com / SEED_PASSWORD');
+  console.log('  管理者: admin@kajishift.com / SEED_PASSWORD');
 }
 
 main()

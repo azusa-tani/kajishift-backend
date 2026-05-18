@@ -25,7 +25,7 @@ Write-Host "2. ユーザー登録" -ForegroundColor Yellow
 Write-Host "   POST $baseUrl/auth/register" -ForegroundColor Gray
 $registerData = @{
     email = "test@example.com"
-    password = "password123"
+    password = "KajiShiftLocalDev!2026"
     name = "テストユーザー"
     role = "CUSTOMER"
 } | ConvertTo-Json
@@ -54,7 +54,7 @@ Write-Host "3. ログイン" -ForegroundColor Yellow
 Write-Host "   POST $baseUrl/auth/login" -ForegroundColor Gray
 $loginData = @{
     email = "test@example.com"
-    password = "password123"
+    password = "KajiShiftLocalDev!2026"
 } | ConvertTo-Json
 
 try {

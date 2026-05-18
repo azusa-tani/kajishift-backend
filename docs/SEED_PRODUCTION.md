@@ -6,24 +6,24 @@
 
 ## 前提条件
 
-1. Renderダッシュボードから`DATABASE_URL`を取得していること
+1. Railwayダッシュボードから`DATABASE_URL`を取得していること
 2. PowerShellが使用可能であること
 
 ## 手順
 
 ### ステップ1: DATABASE_URLを取得
 
-1. Renderダッシュボードにアクセス: https://dashboard.render.com/
-2. `kajishift-db`（または`kajishift-postgres`）を開く
+1. Railwayダッシュボードにアクセス: https://railway.app/dashboard
+2. RailwayのPostgresサービスを開く
 3. 「Connections」タブを開く
-4. 「Internal Database URL」をコピー
+4. 「Connect」または「Variables」からDATABASE_URLを安全に取得
 
 ### ステップ2: PowerShellで環境変数を設定
 
 PowerShellで以下のコマンドを実行してください：
 
 ```powershell
-$env:DATABASE_URL="postgresql://kajishift_user:VyeFrTChBqUkUWwU4QtoAARoghieuUGT@dpg-d6bc1id6ubr73cgq3vg-a/kajishift"
+$env:DATABASE_URL="postgresql://<user>:<password>@<host>/<database>"
 ```
 
 **重要**: `$env:`の前に`$`（ドル記号）が必要です。
@@ -47,7 +47,7 @@ $env:DATABASE_URL
 環境変数の設定とスクリプトの実行を1つのコマンドで行う場合：
 
 ```powershell
-$env:DATABASE_URL="postgresql://kajishift_user:VyeFrTChBqUkUWwU4QtoAARoghieuUGT@dpg-d6bc1id6ubr73cgq3vg-a/kajishift"; .\scripts\seed-production.ps1
+$env:DATABASE_URL="postgresql://<user>:<password>@<host>/<database>"; .\scripts\seed-production.ps1
 ```
 
 ## 実行内容
@@ -70,12 +70,12 @@ https://kajishift-backend-production.up.railway.app/api/health/db
 
 ## 作成されるテストユーザー
 
-- **依頼者1**: `customer1@example.com` / `password123`
-- **依頼者2**: `customer2@example.com` / `password123`
-- **ワーカー1**: `worker1@example.com` / `password123`
-- **ワーカー2**: `worker2@example.com` / `password123`
-- **ワーカー3**: `worker3@example.com` / `password123`
-- **管理者**: `admin@kajishift.com` / `password123`
+- **依頼者1**: `customer1@example.com` / `管理者から安全共有されたテスト用パスワード`
+- **依頼者2**: `customer2@example.com` / `管理者から安全共有されたテスト用パスワード`
+- **ワーカー1**: `worker1@example.com` / `管理者から安全共有されたテスト用パスワード`
+- **ワーカー2**: `worker2@example.com` / `管理者から安全共有されたテスト用パスワード`
+- **ワーカー3**: `worker3@example.com` / `管理者から安全共有されたテスト用パスワード`
+- **管理者**: `admin@kajishift.com` / `管理者から安全共有されたテスト用パスワード`
 
 ## トラブルシューティング
 
