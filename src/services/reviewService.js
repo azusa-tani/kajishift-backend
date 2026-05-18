@@ -6,6 +6,12 @@ const prisma = require('../config/database');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 
+const createHttpError = (message, status) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
 /**
  * レビューを投稿
  * @param {string} reviewerId - レビュー投稿者ID（依頼者）
@@ -16,12 +22,12 @@ const createReview = async (reviewerId, reviewData) => {
 
   // 必須フィールドのチェック
   if (!bookingId || !rating) {
-    throw new Error('予約IDと評価は必須です');
+    throw createHttpError('予約IDと評価は必須です', 400);
   }
 
   // 評価のバリデーション（1-5の範囲）
   if (rating < 1 || rating > 5) {
-    throw new Error('評価は1から5の範囲で入力してください');
+    throw createHttpError('評価は1から5の範囲で入力してください', 400);
   }
 
   // 予約の存在確認と権限チェック
@@ -39,27 +45,27 @@ const createReview = async (reviewerId, reviewData) => {
   });
 
   if (!booking) {
-    throw new Error('予約が見つかりません');
+    throw createHttpError('予約が見つかりません', 404);
   }
 
   // 依頼者のみレビューを投稿可能
   if (booking.customerId !== reviewerId) {
-    throw new Error('この予約のレビューを投稿する権限がありません');
+    throw createHttpError('この予約のレビューを投稿する権限がありません', 403);
   }
 
   // 予約が完了している必要がある
   if (booking.status !== 'COMPLETED') {
-    throw new Error('完了済みの予約のみレビューを投稿できます');
+    throw createHttpError('完了済みの予約のみレビューを投稿できます', 409);
   }
 
   // 既にレビューが存在するかチェック
   if (booking.review) {
-    throw new Error('この予約には既にレビューが投稿されています');
+    throw createHttpError('この予約には既にレビューが投稿されています', 409);
   }
 
   // ワーカーが設定されている必要がある
   if (!booking.workerId) {
-    throw new Error('ワーカーが設定されていない予約にはレビューを投稿できません');
+    throw createHttpError('ワーカーが設定されていない予約にはレビューを投稿できません', 409);
   }
 
   // トランザクションでレビュー作成とワーカーの評価更新を実行
