@@ -7,6 +7,12 @@ const path = require('path');
 const PDFDocument = require('pdfkit');
 const prisma = require('../config/database');
 
+const createHttpError = (message, status) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
 const FONT_DIR = path.join(__dirname, '..', '..', 'assets', 'fonts');
 const FONT_JP_REGULAR = path.join(FONT_DIR, 'NotoSansJP-Regular.otf');
 const FONT_JP_BOLD = path.join(FONT_DIR, 'NotoSansJP-Bold.otf');
@@ -72,17 +78,17 @@ const generateReceiptPDF = async (paymentId, userId) => {
   });
 
   if (!payment) {
-    throw new Error('決済が見つかりません');
+    throw createHttpError('決済が見つかりません', 404);
   }
 
   // 権限チェック：顧客のみ自分の決済の領収書を取得可能
   if (payment.userId !== userId) {
-    throw new Error('この決済の領収書を取得する権限がありません');
+    throw createHttpError('この決済の領収書を取得する権限がありません', 403);
   }
 
   // 決済が完了していない場合はエラー
   if (payment.status !== 'COMPLETED') {
-    throw new Error('完了していない決済の領収書は発行できません');
+    throw createHttpError('完了していない決済の領収書は発行できません', 409);
   }
 
   // PDFドキュメントを作成

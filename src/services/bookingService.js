@@ -7,6 +7,12 @@ const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 const uploadService = require('./uploadService');
 
+const createHttpError = (message, status) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
 /** 予約レスポンスの worker に付けるプロフィール画像（File テーブル PROFILE_IMAGE の最新1件） */
 const WORKER_PROFILE_FILES = {
   where: { fileType: 'PROFILE_IMAGE' },
@@ -436,7 +442,7 @@ const updateBooking = async (bookingId, userId, userRole, updateData) => {
   const { serviceType, scheduledDate, startTime, duration, address, notes, workerId, status } = updateData;
   
   if (status === undefined && (booking.status === 'COMPLETED' || booking.status === 'CANCELLED')) {
-    throw new Error('完了またはキャンセル済みの予約は更新できません');
+    throw createHttpError('完了またはキャンセル済みの予約は更新できません', 409);
   }
 
   const updateFields = {};
@@ -744,7 +750,7 @@ const acceptBooking = async (bookingId, userId) => {
   });
 
   if (!booking) {
-    throw new Error('予約が見つかりません');
+    throw createHttpError('予約が見つかりません', 404);
   }
 
   // ワーカーのみ承諾可能
@@ -754,21 +760,21 @@ const acceptBooking = async (bookingId, userId) => {
   });
 
   if (!worker || worker.role !== 'WORKER') {
-    throw new Error('ワーカーのみ予約を承諾できます');
+    throw createHttpError('ワーカーのみ予約を承諾できます', 403);
   }
 
   if (worker.status !== 'ACTIVE') {
-    throw new Error('アクティブなワーカーのみ予約を承諾できます');
+    throw createHttpError('アクティブなワーカーのみ予約を承諾できます', 403);
   }
 
   // ステータスチェック：PENDINGの予約のみ承諾可能
   if (booking.status !== 'PENDING') {
-    throw new Error('確定待ちの予約のみ承諾できます');
+    throw createHttpError('確定待ちの予約のみ承諾できます', 409);
   }
 
   // 既に他のワーカーが割り当てられている場合はエラー
   if (booking.workerId && booking.workerId !== userId) {
-    throw new Error('この予約は既に他のワーカーに割り当てられています');
+    throw createHttpError('この予約は既に他のワーカーに割り当てられています', 409);
   }
 
   // 予約を承諾（ワーカーを割り当て、ステータスをCONFIRMEDに変更）
@@ -845,7 +851,7 @@ const rejectBooking = async (bookingId, userId, reason = null) => {
   });
 
   if (!booking) {
-    throw new Error('予約が見つかりません');
+    throw createHttpError('予約が見つかりません', 404);
   }
 
   // ワーカーのみ拒否可能
@@ -955,17 +961,17 @@ const completeBooking = async (bookingId, userId) => {
   });
 
   if (!worker || worker.role !== 'WORKER') {
-    throw new Error('ワーカーのみ作業を完了できます');
+    throw createHttpError('ワーカーのみ作業を完了できます', 403);
   }
 
   // 自分が割り当てられている予約のみ完了可能
   if (booking.workerId !== userId) {
-    throw new Error('自分が割り当てられていない予約は完了できません');
+    throw createHttpError('自分が割り当てられていない予約は完了できません', 403);
   }
 
   // ステータスチェック：IN_PROGRESSまたはCONFIRMEDの予約のみ完了可能
   if (booking.status !== 'IN_PROGRESS' && booking.status !== 'CONFIRMED') {
-    throw new Error('進行中または確定済みの予約のみ完了できます');
+    throw createHttpError('進行中または確定済みの予約のみ完了できます', 409);
   }
 
   // 予約を完了
