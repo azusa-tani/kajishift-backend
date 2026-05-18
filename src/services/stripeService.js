@@ -62,7 +62,8 @@ const createPaymentIntent = async ({ amount, customerId, bookingId, userId, paym
       environment: process.env.NODE_ENV || 'development'
     },
     automatic_payment_methods: {
-      enabled: true
+      enabled: true,
+      allow_redirects: 'never'
     }
   });
 };
