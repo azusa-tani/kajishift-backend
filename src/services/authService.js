@@ -136,11 +136,11 @@ const register = async (userData) => {
 const login = async (email, password) => {
   // バリデーション
   if (!validateEmail(email)) {
-    throw new Error('有効なメールアドレスを入力してください');
+    throw httpError('有効なメールアドレスを入力してください', 400);
   }
 
   if (!password) {
-    throw new Error('パスワードを入力してください');
+    throw httpError('パスワードを入力してください', 400);
   }
 
   // ユーザーを検索
@@ -149,19 +149,19 @@ const login = async (email, password) => {
   });
 
   if (!user) {
-    throw new Error('メールアドレスまたはパスワードが正しくありません');
+    throw httpError('メールアドレスまたはパスワードが正しくありません', 401);
   }
 
   // アカウントステータスのチェック
   if (user.status === 'INACTIVE' || user.status === 'SUSPENDED') {
-    throw new Error('このアカウントは利用できません');
+    throw httpError('このアカウントは利用できません', 403);
   }
 
   // パスワードの検証
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
-    throw new Error('メールアドレスまたはパスワードが正しくありません');
+    throw httpError('メールアドレスまたはパスワードが正しくありません', 401);
   }
 
   // JWTトークンを生成
