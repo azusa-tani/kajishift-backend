@@ -38,6 +38,8 @@ const uploadFile = async (req, res, next) => {
     if (uploadsIndex !== -1) {
       relativePath = file.path.substring(uploadsIndex);
     }
+
+    const fileContent = fs.readFileSync(file.path);
     
     // ファイル情報を保存
     const fileInfo = await uploadService.saveFileInfo(
@@ -46,7 +48,8 @@ const uploadFile = async (req, res, next) => {
       file.originalname,
       file.mimetype,
       file.size,
-      fileType
+      fileType,
+      fileContent
     );
 
     // ファイルURLを生成
@@ -111,6 +114,12 @@ const downloadFile = async (req, res, next) => {
       : path.join(__dirname, '../../', fileInfo.filePath);
 
     if (!fs.existsSync(fullPath)) {
+      if (fileInfo.content) {
+        res.setHeader('Content-Type', fileInfo.mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${fileInfo.originalName}"`);
+        return res.send(Buffer.from(fileInfo.content));
+      }
+
       return res.status(404).json({
         error: 'Not Found',
         message: 'ファイルが見つかりません'

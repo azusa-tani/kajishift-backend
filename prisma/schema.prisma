@@ -287,6 +287,7 @@ model File {
   mimeType    String    @map("mime_type")
   fileSize    Int       @map("file_size") // バイト
   fileType    FileType  @default(GENERAL) @map("file_type")
+  content     Bytes?    @map("content") // β版のRailway再デプロイ対策としてDBにも保存
   
   // リレーション
   user        User      @relation(fields: [userId], references: [id])

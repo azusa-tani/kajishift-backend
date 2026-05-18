@@ -14,8 +14,9 @@ const path = require('path');
  * @param {string} mimeType - MIMEタイプ
  * @param {number} fileSize - ファイルサイズ（バイト）
  * @param {string} fileType - ファイルタイプ（PROFILE_IMAGE, ID_DOCUMENT, GENERAL）
+ * @param {Buffer|null} content - ファイル内容（永続化フォールバック用）
  */
-const saveFileInfo = async (userId, filePath, originalName, mimeType, fileSize, fileType = 'GENERAL') => {
+const saveFileInfo = async (userId, filePath, originalName, mimeType, fileSize, fileType = 'GENERAL', content = null) => {
   // ファイル情報を作成
   const file = await prisma.file.create({
     data: {
@@ -24,11 +25,19 @@ const saveFileInfo = async (userId, filePath, originalName, mimeType, fileSize, 
       originalName,
       mimeType,
       fileSize,
-      fileType
+      fileType,
+      content
     }
   });
 
   return file;
+};
+
+const getFileByPath = async (filePath) => {
+  return prisma.file.findFirst({
+    where: { filePath },
+    orderBy: { createdAt: 'desc' }
+  });
 };
 
 /**
@@ -149,6 +158,7 @@ const getFileUrl = (filePath) => {
 module.exports = {
   saveFileInfo,
   getFileInfo,
+  getFileByPath,
   getUserFiles,
   deleteFile,
   getFileUrl

@@ -232,9 +232,25 @@ app.get('/api/health/db', async (req, res) => {
 
 // 静的ファイルの配信（アップロードされたファイル用）
 const path = require('path');
+const uploadService = require('./services/uploadService');
 const uploadDir = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.join(__dirname, '../uploads');
+app.get('/uploads/*', async (req, res, next) => {
+  try {
+    const relativePath = `uploads/${req.params[0]}`.replace(/\\/g, '/');
+    const file = await uploadService.getFileByPath(relativePath);
+    if (!file || !file.content) {
+      return next();
+    }
+
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader('Content-Length', file.content.length);
+    res.send(Buffer.from(file.content));
+  } catch (error) {
+    next(error);
+  }
+});
 app.use('/uploads', express.static(uploadDir));
 
 // ルート
