@@ -10,6 +10,12 @@ const stripeService = require('./stripeService');
 
 const { serializeBooking, WORKER_PROFILE_FILES } = bookingService;
 
+const createHttpError = (message, status) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
 /**
  * 決済履歴を取得
  * @param {string} userId - ユーザーID
@@ -130,7 +136,7 @@ const calculateBookingAmount = (booking) => {
   }
 
   if (amount <= 0) {
-    throw new Error('決済金額が0円以下です');
+    throw createHttpError('決済金額が0円以下です', 400);
   }
 
   return amount;
@@ -138,15 +144,15 @@ const calculateBookingAmount = (booking) => {
 
 const assertPaymentAllowed = (booking) => {
   if (booking.status === 'PENDING') {
-    throw new Error('ワーカー確定前の予約は決済できません');
+    throw createHttpError('ワーカー確定前の予約は決済できません', 409);
   }
 
   if (booking.status === 'COMPLETED') {
-    throw new Error('完了済みの予約は新規決済できません');
+    throw createHttpError('完了済みの予約は新規決済できません', 409);
   }
 
   if (booking.status === 'CANCELLED') {
-    throw new Error('キャンセル済みの予約は決済できません');
+    throw createHttpError('キャンセル済みの予約は決済できません', 409);
   }
 };
 
@@ -162,7 +168,7 @@ const createPaymentIntent = async (bookingId, userId) => {
 
   // 顧客のみ決済可能
   if (booking.customerId !== userId) {
-    throw new Error('この予約の決済を実行する権限がありません');
+    throw createHttpError('この予約の決済を実行する権限がありません', 403);
   }
 
   // 既に決済が存在するかチェック
@@ -172,10 +178,10 @@ const createPaymentIntent = async (bookingId, userId) => {
 
   if (existingPayment) {
     if (existingPayment.status === 'COMPLETED') {
-      throw new Error('この予約は既に決済済みです');
+      throw createHttpError('この予約は既に決済済みです', 409);
     }
     if (existingPayment.status === 'PENDING' && existingPayment.transactionId) {
-      throw new Error('この予約の決済は既に処理中です');
+      throw createHttpError('この予約の決済は既に処理中です', 409);
     }
   }
 
