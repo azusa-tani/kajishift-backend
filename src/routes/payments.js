@@ -46,6 +46,8 @@ router.use(authenticate);
  */
 router.get('/', paymentController.getPayments);
 
+router.post('/intent', paymentController.createPaymentIntent);
+
 /**
  * @swagger
  * /payments:

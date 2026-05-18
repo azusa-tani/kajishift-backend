@@ -62,6 +62,7 @@ model User {
   workerUnavailableSlots WorkerUnavailableSlot[]
   /// アプリ内メール通知などのユーザー別設定（JSON v1）
   notificationPrefs Json? @map("notification_prefs")
+  stripeCustomerId String? @unique @map("stripe_customer_id")
 
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -122,7 +123,7 @@ model Payment {
   amount        Int           // 金額（円）
   paymentMethod String        @map("payment_method") // "credit_card", "bank_transfer"など
   status        PaymentStatus @default(PENDING)
-  transactionId String?       @map("transaction_id") // 外部決済システムのトランザクションID
+  transactionId String?       @unique @map("transaction_id") // 外部決済システムのトランザクションID
   
   // リレーション
   booking       Booking       @relation(fields: [bookingId], references: [id])
@@ -132,6 +133,17 @@ model Payment {
   updatedAt     DateTime      @updatedAt @map("updated_at")
   
   @@map("payments")
+}
+
+// Stripe Webhookの冪等処理
+model StripeEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("stripe_events")
+  @@index([type])
+  @@index([processedAt])
 }
 
 // レビュー・評価

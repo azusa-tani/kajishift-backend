@@ -1540,6 +1540,13 @@ router.put('/areas/:id', adminController.updateArea);
 router.delete('/areas/:id', adminController.deleteArea);
 
 router.get('/debug/users', async (req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({
+      error: 'Not Found',
+      message: 'Route GET /api/admin/debug/users not found'
+    });
+  }
+
   try {
     const prisma = require('../config/database');
     const users = await prisma.user.findMany({

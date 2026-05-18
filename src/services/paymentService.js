@@ -6,6 +6,7 @@ const prisma = require('../config/database');
 const bookingService = require('./bookingService');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
+const stripeService = require('./stripeService');
 
 const { serializeBooking, WORKER_PROFILE_FILES } = bookingService;
 
@@ -92,23 +93,69 @@ const getPayments = async (userId, userRole, filters = {}) => {
   };
 };
 
-/**
- * 決済を処理
- * @param {string} bookingId - 予約ID
- * @param {string} userId - ユーザーID（支払い者）
- * @param {string} paymentMethod - 決済方法
- * @param {string} transactionId - 外部決済システムのトランザクションID（オプション）
- */
-const processPayment = async (bookingId, userId, paymentMethod, transactionId = null) => {
-  // 必須フィールドのチェック
-  if (!paymentMethod) {
-    throw new Error('決済方法は必須です');
+const includePaymentRelations = {
+  booking: {
+    include: {
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
+      worker: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          hourlyRate: true,
+          files: WORKER_PROFILE_FILES,
+        },
+      },
+    },
+  },
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true
+    }
+  }
+};
+
+const calculateBookingAmount = (booking) => {
+  let amount = booking.totalAmount || 0;
+  if (!amount && booking.worker && booking.worker.hourlyRate) {
+    amount = booking.worker.hourlyRate * booking.duration;
   }
 
-  const validPaymentMethods = ['credit_card', 'bank_transfer', 'cash'];
-  if (!validPaymentMethods.includes(paymentMethod)) {
-    throw new Error('無効な決済方法です');
+  if (amount <= 0) {
+    throw new Error('決済金額が0円以下です');
   }
+
+  return amount;
+};
+
+const assertPaymentAllowed = (booking) => {
+  if (booking.status === 'PENDING') {
+    throw new Error('ワーカー確定前の予約は決済できません');
+  }
+
+  if (booking.status === 'COMPLETED') {
+    throw new Error('完了済みの予約は新規決済できません');
+  }
+
+  if (booking.status === 'CANCELLED') {
+    throw new Error('キャンセル済みの予約は決済できません');
+  }
+};
+
+/**
+ * Stripe PaymentIntentを作成
+ * @param {string} bookingId - 予約ID
+ * @param {string} userId - ユーザーID（支払い者）
+ */
+const createPaymentIntent = async (bookingId, userId) => {
 
   // 予約の存在確認と権限チェック
   const booking = await bookingService.getBookingById(bookingId, userId, 'CUSTOMER');
@@ -127,106 +174,39 @@ const processPayment = async (bookingId, userId, paymentMethod, transactionId = 
     if (existingPayment.status === 'COMPLETED') {
       throw new Error('この予約は既に決済済みです');
     }
-    if (existingPayment.status === 'PENDING') {
+    if (existingPayment.status === 'PENDING' && existingPayment.transactionId) {
       throw new Error('この予約の決済は既に処理中です');
     }
   }
 
-  // 予約のステータスチェック
-  if (booking.status === 'CANCELLED') {
-    throw new Error('キャンセル済みの予約は決済できません');
-  }
+  assertPaymentAllowed(booking);
 
-  // 予約金額を計算（ワーカーが選択されている場合）
-  let amount = booking.totalAmount || 0;
-  if (!amount && booking.worker && booking.worker.hourlyRate) {
-    amount = booking.worker.hourlyRate * booking.duration;
-  }
+  const amount = calculateBookingAmount(booking);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, stripeCustomerId: true }
+  });
+  const customerId = await stripeService.getOrCreateCustomer(user);
 
-  if (amount <= 0) {
-    throw new Error('決済金額が0円以下です');
-  }
-
-  // 決済を作成または更新
-  let payment;
+  let payment = existingPayment;
   if (existingPayment) {
-    // 既存の決済を更新
     payment = await prisma.payment.update({
       where: { id: existingPayment.id },
       data: {
-        paymentMethod,
-        transactionId: transactionId || existingPayment.transactionId,
-        status: 'COMPLETED'
-      },
-      include: {
-        booking: {
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            },
-            worker: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                hourlyRate: true,
-                files: WORKER_PROFILE_FILES,
-              },
-            },
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
+        amount,
+        paymentMethod: 'stripe',
+        transactionId: null,
+        status: 'PENDING'
       }
     });
   } else {
-    // 新しい決済を作成
     payment = await prisma.payment.create({
       data: {
         bookingId,
         userId,
         amount,
-        paymentMethod,
-        transactionId,
-        status: 'COMPLETED'
-      },
-      include: {
-        booking: {
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            },
-            worker: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                hourlyRate: true,
-                files: WORKER_PROFILE_FILES,
-              },
-            },
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
+        paymentMethod: 'stripe',
+        status: 'PENDING'
       }
     });
   }
@@ -237,14 +217,34 @@ const processPayment = async (bookingId, userId, paymentMethod, transactionId = 
     data: { totalAmount: amount }
   });
 
-  // 通知を生成（ワーカーに通知）
+  const intent = await stripeService.createPaymentIntent({
+    amount,
+    customerId,
+    bookingId,
+    userId,
+    paymentId: payment.id
+  });
+
+  payment = await prisma.payment.update({
+    where: { id: payment.id },
+    data: { transactionId: intent.id }
+  });
+
+  return {
+    payment,
+    clientSecret: intent.client_secret,
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null
+  };
+};
+
+const notifyPaymentCompleted = async (payment) => {
   try {
     if (payment.booking.workerId) {
       await notificationService.createNotification(
         payment.booking.workerId,
         'PAYMENT',
         '決済が完了しました',
-        `${payment.booking.customer.name}さんからの決済（${amount.toLocaleString()}円）が完了しました。`,
+        `${payment.booking.customer.name}さんからの決済（${payment.amount.toLocaleString()}円）が完了しました。`,
         payment.id,
         'PAYMENT'
       );
@@ -272,6 +272,27 @@ const processPayment = async (bookingId, userId, paymentMethod, transactionId = 
     // メール送信エラーは無視（決済処理は成功）
     console.error('メール送信エラー:', error);
   }
+};
+
+const markPaymentCompletedByIntent = async (paymentIntent) => {
+  const existingPayment = await prisma.payment.findUnique({
+    where: { transactionId: paymentIntent.id }
+  });
+
+  if (!existingPayment) {
+    return null;
+  }
+
+  const payment = await prisma.payment.update({
+    where: { id: existingPayment.id },
+    data: {
+      status: 'COMPLETED',
+      paymentMethod: 'stripe'
+    },
+    include: includePaymentRelations
+  });
+
+  await notifyPaymentCompleted(payment);
 
   return {
     ...payment,
@@ -279,7 +300,62 @@ const processPayment = async (bookingId, userId, paymentMethod, transactionId = 
   };
 };
 
+const markPaymentFailedByIntent = async (paymentIntent) => {
+  const payment = await prisma.payment.findUnique({
+    where: { transactionId: paymentIntent.id }
+  });
+
+  if (!payment) {
+    return null;
+  }
+
+  return prisma.payment.update({
+    where: { id: payment.id },
+    data: { status: 'FAILED' }
+  });
+};
+
+const handleStripeEvent = async (event) => {
+  const existingEvent = await prisma.stripeEvent.findUnique({
+    where: { id: event.id }
+  });
+
+  if (existingEvent) {
+    return { received: true, duplicate: true };
+  }
+
+  await prisma.stripeEvent.create({
+    data: {
+      id: event.id,
+      type: event.type
+    }
+  });
+
+  try {
+    if (event.type === 'payment_intent.succeeded') {
+      await markPaymentCompletedByIntent(event.data.object);
+    } else if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {
+      await markPaymentFailedByIntent(event.data.object);
+    }
+  } catch (error) {
+    await prisma.stripeEvent.delete({
+      where: { id: event.id }
+    }).catch(() => {});
+    throw error;
+  }
+
+  return { received: true };
+};
+
+const processPayment = async () => {
+  const error = new Error('旧決済APIは廃止されました。POST /api/payments/intent を使用してください。');
+  error.status = 410;
+  throw error;
+};
+
 module.exports = {
   getPayments,
+  createPaymentIntent,
+  handleStripeEvent,
   processPayment
 };

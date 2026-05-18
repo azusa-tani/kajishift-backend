@@ -32,6 +32,8 @@ router.use(authenticate);
  */
 router.get('/', cardController.getCards);
 
+router.post('/setup-intent', cardController.createSetupIntent);
+
 /**
  * @swagger
  * /cards:

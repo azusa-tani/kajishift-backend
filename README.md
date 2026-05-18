@@ -4,6 +4,10 @@
 
 ## 更新履歴
 
+- **2026年5月1日**:
+  - **予約（Booking）**: Prisma の `Booking` モデルに `completedAt`（DB カラム `completed_at`、任意の日時）を定義し、本番 PostgreSQL と同期。完了日時の記録・照会に利用可能。
+  - **領収書 PDF**: `GET /api/payments/:id/receipt` の生成で **Noto Sans JP**（`assets/fonts/NotoSansJP-*.otf`）を PDFKit に登録し、日本語の文字化けを解消。デプロイ時はフォントファイルが成果物に含まれることを確認すること。詳細は [`docs/INSTALL_PDFKIT.md`](./docs/INSTALL_PDFKIT.md) を参照。
+
 - **2026年4月17日**: ワーカー本人のカレンダー「利用不可」スロットを API 化（`GET/POST/PUT/DELETE /api/workers/me/unavailable-slots`）。仕様は [`docs/WORKER_UNAVAILABLE_SLOTS_API.md`](./docs/WORKER_UNAVAILABLE_SLOTS_API.md) を参照。
 
 - **2026年3月26日**: Railway運用向けの接続・設定を更新
@@ -127,6 +131,8 @@ npm start
 
 ```
 kajishift-backend/
+├── assets/
+│   └── fonts/           # 領収書 PDF 用（Noto Sans JP サブセット OTF）
 ├── src/
 │   ├── controllers/     # コントローラー
 │   ├── services/        # ビジネスロジック
@@ -147,6 +153,7 @@ kajishift-backend/
 ## ドキュメント
 
 - [`docs/DATABASE_SETUP.md`](./docs/DATABASE_SETUP.md) - データベースセットアップガイド
+- [`docs/INSTALL_PDFKIT.md`](./docs/INSTALL_PDFKIT.md) - pdfkit・領収書 PDF・日本語フォント
 - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) - デプロイメントガイド（全プラットフォーム対応）
 - [`docs/RENDER_DEPLOYMENT.md`](./docs/RENDER_DEPLOYMENT.md) - Renderデプロイメント詳細手順書
 - [`docs/DEPLOYMENT_HANDOVER.md`](./docs/DEPLOYMENT_HANDOVER.md) - **デプロイメント作業 引継ぎドキュメント（最新）**

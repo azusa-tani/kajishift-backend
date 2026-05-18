@@ -219,7 +219,7 @@ npm run prisma:migrate
 - Prismaスキーマ（`prisma/schema.prisma`）に基づいてデータベーステーブルが作成されます
 - 以下のテーブルが作成されます：
   - `users` - ユーザー情報（依頼者・ワーカー・管理者）
-  - `bookings` - 予約情報
+  - `bookings` - 予約情報（任意の完了日時は `completed_at` カラム。Prisma では `Booking.completedAt`）
   - `payments` - 決済情報
   - `reviews` - レビュー・評価情報
   - `messages` - チャットメッセージ情報

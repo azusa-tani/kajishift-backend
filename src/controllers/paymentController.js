@@ -30,10 +30,10 @@ const getPayments = async (req, res, next) => {
 };
 
 /**
- * 決済を処理
- * POST /api/payments
+ * Stripe PaymentIntentを作成
+ * POST /api/payments/intent
  */
-const processPayment = async (req, res, next) => {
+const createPaymentIntent = async (req, res, next) => {
   try {
     // 顧客のみ決済可能
     if (req.user.role !== 'CUSTOMER') {
@@ -43,7 +43,7 @@ const processPayment = async (req, res, next) => {
       });
     }
 
-    const { bookingId, paymentMethod, transactionId } = req.body;
+    const { bookingId } = req.body;
     const userId = req.user.id;
 
     if (!bookingId) {
@@ -53,19 +53,24 @@ const processPayment = async (req, res, next) => {
       });
     }
 
-    if (!paymentMethod) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: '決済方法は必須です'
-      });
-    }
-
-    const payment = await paymentService.processPayment(bookingId, userId, paymentMethod, transactionId);
+    const result = await paymentService.createPaymentIntent(bookingId, userId);
 
     res.status(201).json({
-      message: '決済が完了しました',
-      data: payment
+      message: '決済Intentを作成しました',
+      data: result
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 旧決済API
+ * POST /api/payments
+ */
+const processPayment = async (req, res, next) => {
+  try {
+    await paymentService.processPayment();
   } catch (error) {
     next(error);
   }
@@ -95,6 +100,7 @@ const downloadReceipt = async (req, res, next) => {
 
 module.exports = {
   getPayments,
+  createPaymentIntent,
   processPayment,
   downloadReceipt
 };

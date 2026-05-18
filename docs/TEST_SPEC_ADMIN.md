@@ -76,6 +76,8 @@
 7. **決済・売上管理機能テスト**（ADMIN-025 ～ ADMIN-026）
    - [ ] 決済一覧表示
    - [ ] 売上レポート表示
+   - [ ] Stripe Dashboard の PaymentIntent ID と管理画面の決済レコード（`transactionId`）を突合
+   - [ ] 決済済み予約キャンセル時は `docs/BETA_REFUND_POLICY.md` の手順へ誘導される
 
 8. **問い合わせ管理機能テスト**（ADMIN-027 ～ ADMIN-030）
    - [ ] 問い合わせ一覧表示

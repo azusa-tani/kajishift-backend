@@ -42,6 +42,14 @@ const register = async (userData) => {
     idDocumentUrl
   } = userData;
 
+  if (role === 'ADMIN') {
+    throw httpError('公開登録APIから管理者アカウントは作成できません', 403);
+  }
+
+  if (!['CUSTOMER', 'WORKER'].includes(role)) {
+    throw httpError('無効なユーザーロールです');
+  }
+
   // バリデーション
   if (!validateEmail(email)) {
     throw httpError('有効なメールアドレスを入力してください');

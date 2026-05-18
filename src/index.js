@@ -46,12 +46,25 @@ app.use(compression());
 app.set('trust proxy', 1);
 
 // CORS設定
+const configuredOrigins = (process.env.CORS_ORIGIN || 'https://kajishift-frontend.vercel.app')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'https://kajishift-frontend.vercel.app',
+  origin(origin, callback) {
+    if (!origin || configuredOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('CORS policy: origin is not allowed'));
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+
+// Stripe Webhookは署名検証のためJSONパーサーより前にraw bodyで受け取る
+app.use('/api/webhooks', require('./routes/webhooks'));
 
 // ボディパーサー
 app.use(express.json({ limit: '10mb' }));
@@ -63,11 +76,13 @@ app.use(requestLogger);
 // 一般的なレート制限（すべてのルートに適用）
 app.use('/api', generalLimiter);
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'KAJISHIFT API Documentation'
-}));
+// Swagger UI（本番ではAPI構造を公開しない）
+if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_API_DOCS === 'true') {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'KAJISHIFT API Documentation'
+  }));
+}
 
 /**
  * @swagger
@@ -125,6 +140,13 @@ app.get('/api/health', (req, res) => {
  *                   type: object
  */
 app.get('/api/health/db', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({
+      error: 'Not Found',
+      message: 'Route GET /api/health/db not found'
+    });
+  }
+
   const prisma = require('./config/database');
   const { PrismaClient } = require('@prisma/client');
   
@@ -210,7 +232,10 @@ app.get('/api/health/db', async (req, res) => {
 
 // 静的ファイルの配信（アップロードされたファイル用）
 const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+const uploadDir = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.join(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadDir));
 
 // ルート
 app.use('/api/auth', require('./routes/auth'));

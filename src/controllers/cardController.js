@@ -29,6 +29,26 @@ const getCards = async (req, res, next) => {
   }
 };
 
+const createSetupIntent = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'CUSTOMER') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'カードを管理できるのは顧客のみです'
+      });
+    }
+
+    const result = await cardService.createSetupIntent(req.user.id);
+
+    res.status(201).json({
+      message: 'カード登録Intentを作成しました',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * カードを追加
  * POST /api/cards
@@ -43,48 +63,25 @@ const addCard = async (req, res, next) => {
       });
     }
 
+    if (req.body.cardNumber || req.body.securityCode) {
+      return res.status(410).json({
+        error: 'Gone',
+        message: 'カード番号をAPIへ直接送信する方式は廃止されました。Stripe PaymentMethodを使用してください。'
+      });
+    }
+
     const userId = req.user.id;
-    const { cardNumber, expiryMonth, expiryYear, cardholderName, securityCode, isDefault } = req.body;
+    const { paymentMethodId, isDefault } = req.body;
 
-    // 必須フィールドのチェック
-    if (!cardNumber || !expiryMonth || !expiryYear || !cardholderName) {
+    if (!paymentMethodId) {
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'カード番号、有効期限、カード名義人は必須です'
+        message: 'Stripe PaymentMethod IDは必須です'
       });
     }
-
-    // カード番号のバリデーション（数字のみ、13-19桁）
-    const cleanCardNumber = cardNumber.replace(/\s/g, '');
-    if (!/^\d{13,19}$/.test(cleanCardNumber)) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'カード番号が無効です'
-      });
-    }
-
-    // セキュリティコードのバリデーション（実際の実装では使用しないが、バリデーションのみ）
-    if (securityCode && !/^\d{3,4}$/.test(securityCode)) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'セキュリティコードが無効です'
-      });
-    }
-
-    // カードブランドを判定
-    const brand = cardService.detectCardBrand(cleanCardNumber);
-    const last4 = cardService.getLast4(cleanCardNumber);
 
     // カードを追加
-    const card = await cardService.addCard(userId, {
-      last4,
-      brand,
-      expiryMonth: parseInt(expiryMonth),
-      expiryYear: parseInt(expiryYear),
-      cardholderName,
-      isDefault: isDefault || false,
-      token: null // 実際の実装では外部決済システムのトークンを使用
-    });
+    const card = await cardService.addCardFromPaymentMethod(userId, paymentMethodId, isDefault || false);
 
     res.status(201).json({
       message: 'カードを追加しました',
@@ -153,6 +150,7 @@ const deleteCard = async (req, res, next) => {
 
 module.exports = {
   getCards,
+  createSetupIntent,
   addCard,
   updateCard,
   deleteCard

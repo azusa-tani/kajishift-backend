@@ -3,6 +3,7 @@
  */
 
 const prisma = require('../config/database');
+const stripeService = require('./stripeService');
 
 /**
  * カード一覧を取得
@@ -87,6 +88,46 @@ const addCard = async (userId, cardData) => {
   return card;
 };
 
+const createSetupIntent = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, stripeCustomerId: true }
+  });
+
+  if (!user) {
+    throw new Error('ユーザーが見つかりません');
+  }
+
+  const customerId = await stripeService.getOrCreateCustomer(user);
+  const setupIntent = await stripeService.createSetupIntent(customerId);
+
+  return {
+    clientSecret: setupIntent.client_secret,
+    customerId
+  };
+};
+
+const addCardFromPaymentMethod = async (userId, paymentMethodId, isDefault = false) => {
+  if (!paymentMethodId || !paymentMethodId.startsWith('pm_')) {
+    throw new Error('Stripe PaymentMethod IDが必要です');
+  }
+
+  const paymentMethod = await stripeService.retrievePaymentMethod(paymentMethodId);
+  if (!paymentMethod.card) {
+    throw new Error('カードのPaymentMethodのみ登録できます');
+  }
+
+  return addCard(userId, {
+    last4: paymentMethod.card.last4,
+    brand: paymentMethod.card.brand,
+    expiryMonth: paymentMethod.card.exp_month,
+    expiryYear: paymentMethod.card.exp_year,
+    cardholderName: paymentMethod.billing_details?.name || 'CARD HOLDER',
+    token: paymentMethod.id,
+    isDefault
+  });
+};
+
 /**
  * カードを更新
  * @param {string} cardId - カードID
@@ -156,6 +197,14 @@ const deleteCard = async (cardId, userId) => {
   }
 
   // カードを削除（物理削除ではなく論理削除）
+  if (card.token && card.token.startsWith('pm_')) {
+    try {
+      await stripeService.detachPaymentMethod(card.token);
+    } catch (error) {
+      console.error('Stripe PaymentMethod detachエラー:', error);
+    }
+  }
+
   await prisma.creditCard.update({
     where: { id: cardId },
     data: {
@@ -221,6 +270,8 @@ const getLast4 = (cardNumber) => {
 module.exports = {
   getCards,
   addCard,
+  createSetupIntent,
+  addCardFromPaymentMethod,
   updateCard,
   deleteCard,
   detectCardBrand,

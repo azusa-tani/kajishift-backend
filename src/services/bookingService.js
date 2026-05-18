@@ -654,6 +654,17 @@ const cancelBooking = async (bookingId, userId, userRole) => {
     throw new Error('この予約は既にキャンセルされています');
   }
 
+  const completedPayment = await prisma.payment.findFirst({
+    where: {
+      bookingId,
+      status: 'COMPLETED'
+    }
+  });
+
+  if (completedPayment) {
+    throw new Error('決済済みの予約は管理者による返金手続き後にキャンセルしてください');
+  }
+
   // 予約をキャンセル
   const cancelledBooking = await prisma.booking.update({
     where: { id: bookingId },

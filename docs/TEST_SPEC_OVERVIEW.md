@@ -7,9 +7,12 @@
 KAJISHIFTシステムの全機能を、管理者・依頼者・ワーカーの各ロールでテストするための仕様書です。
 
 ### テスト環境
-- **フロントエンドURL**: `https://kajishift-frontend.vercel.app/`
-- **バックエンドURL**: `https://kajishift-backend-production.up.railway.app/api`
-- **テスト用アカウント**: シードデータから取得（全アカウントのパスワード: `password123`）
+- **StagingフロントエンドURL**: Vercel Staging / Preview URL（β版フルE2E用）
+- **StagingバックエンドURL**: Railway Staging API URL（β版フルE2E用）
+- **ProductionフロントエンドURL**: `https://kajishift-frontend.vercel.app/`（β版スモークテストのみ）
+- **ProductionバックエンドURL**: `https://kajishift-backend-production.up.railway.app/api`（β版スモークテストのみ）
+- **Stagingテスト用アカウント**: シードデータから取得（全アカウントのパスワード: `password123`）
+- **Productionテスト用アカウント**: 招待制で作成し、`password123` は使用しない
 
 ---
 
