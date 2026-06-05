@@ -82,9 +82,19 @@ jobs:
         with:
           name: kajishift-db-backup
           path: backups/
+      - name: Inspect downloaded backup artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          find backups -maxdepth 3 -type f -print -exec ls -lh {} \;
       - name: Run restore drill against verification DB
         shell: bash
         run: |
           set -euo pipefail
-          latest_backup="$(ls -1t backups/*.dump.enc backups/*.dump 2>/dev/null | head -n 1)"
+          latest_backup="$(find backups -type f \( -name '*.dump.enc' -o -name '*.dump' \) -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
+          if [ -z "$latest_backup" ]; then
+            echo "No backup artifact found under backups/"
+            exit 1
+          fi
+          echo "Using backup artifact: $latest_backup"
           npm run backup:restore-drill -- "$latest_backup"
