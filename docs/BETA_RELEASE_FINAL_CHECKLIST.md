@@ -5,7 +5,7 @@
 ## 前提判定
 
 - 現時点の実確認後判定: **Conditional Go**
-- 条件: **24h自動停止ガードあり。本番最新デプロイ反映と本番読み取り系はPASS。GitHub Actions日次バックアップworkflowの再実行成功がβ公開前必須**
+- 条件: **24h自動停止ガードあり。本番最新デプロイ反映と本番読み取り系はPASS。GitHub Actions日次バックアップworkflowのPostgreSQL 18 client修正後の再実行成功がβ公開前必須**
 - 本番での予約作成、PaymentIntent作成、領収書DLの再実行は、本番データ保護のため行わない。
 - 本番書き込みを伴う追加E2EはStagingで実施する。
 
@@ -35,6 +35,8 @@
 - GitHub Actions `Database backup and restore drill` の手動実行は `npm ci` が `package-lock.json` 不在で失敗。原因はBackend `.gitignore` が `package-lock.json` を除外していたこと。
 - 対応として `.gitignore` から `package-lock.json` 除外を削除し、lockfileをGit管理対象に戻す。workflowは再現性重視で `npm ci` を維持する。
 - ローカルWindowsで `npm ci --ignore-scripts` を試行したところ、lockfile不足ではなく Prisma engine DLL の `EPERM unlink` で停止。Linux GitHub Actions runnerでは該当DLLロックは想定されないため、Actions再実行で確認する。
+- `package-lock.json` 追加後の手動実行では、backup job の `Create encrypted backup` で `pg_dump` version mismatch が発生。Railway PostgreSQL は18.3、GitHub ActionsのUbuntu標準 `postgresql-client` は16.14だった。
+- 対応として `.github/workflows/database-backup.yml` をPGDG公式APTリポジトリから `postgresql-client-18` をインストールする構成へ変更し、`PG_DUMP_PATH=/usr/lib/postgresql/18/bin/pg_dump` と `PG_RESTORE_PATH=/usr/lib/postgresql/18/bin/pg_restore` を明示する。restore drill jobにも `npm ci` を追加する。
 
 | 対象 | 実確認結果 | 確認方法 | 期待結果 | 証跡ファイル/ログの保存先 | 判定 | 残課題 | 扱い |
 |------|------------|----------|----------|----------------------------|------|--------|------|
@@ -46,7 +48,7 @@
 | Vercel API URL確認 | ローカル `js/config.js` はProduction APIを指す。本番配信configは最新markerなし | `ReadFile js/config.js`, 本番 `config.js` fetch | ProductionフロントがProduction APIを指す | `kajishift-frontend/js/config.js`, Shell実行ログ | Dashboard確認待ち / 本番反映待ち | Vercel最新デプロイ後にNetworkログで `/api/public/status` 取得を確認 | β公開前必須 |
 | 本番読み取り系確認 | push後、本番 `/api/health` はHTTP 200 + `operation.mode=normal`、`/api/public/status` はHTTP 200 + `data.currentMode=normal`。フロント `/`, `/index.html`, `/customer/login.html`, `/worker/login.html` は200 | fetchによるGETのみ | health 200 + operation、public status 200 normal、主要ページ200 | Shell実行ログ、本ファイル | OK | ブラウザ画面/Networkのスクショ保存 | 証跡スクショ待ち |
 | 外部監視/通知設定確認 | アプリ内通知2系統は到達済み。Uptime/Railway/Vercel/Stripe通知はDashboard確認が必要 | 既存通知テスト結果、Runbook確認 | 2系統通知、外部監視、各Dashboard通知が有効 | `docs/BETA_EXECUTION_RESULT.md`, `docs/BETA_OPERATIONS_RUNBOOK.md` | Dashboard確認待ち | 監視サービス、Railway、Vercel、Stripeの通知設定スクショ保存 | β公開前必須 |
-| 日次バックアップ継続設定 | `.github/workflows/database-backup.yml` に日次backupと週次restore drill scheduleあり。手動実行は `package-lock.json` 未コミットにより `npm ci` で失敗したため、lockfileをGit管理対象へ戻す | workflowファイル確認、Actions失敗ログ、`package-lock.json` 管理状態確認 | schedule有効、secrets設定、`npm ci` 成功、backup job成功、週次/手動restore drill成功 | workflowファイル、GitHub Actions画面、失敗/再実行ログ | Conditional Go | 修正commit後にGitHub Actionsを手動再実行し、backup/restore drill job成功を確認 | β公開前必須 |
+| 日次バックアップ継続設定 | `.github/workflows/database-backup.yml` に日次backupと週次restore drill scheduleあり。`npm ci` 失敗はlockfile追加で対応済み。次の失敗原因はPostgreSQL 18.3に対してActions標準 `pg_dump` 16.14を使ったversion mismatchで、PGDG `postgresql-client-18` へ修正 | workflowファイル確認、Actions失敗ログ、`package-lock.json` 管理状態確認、PostgreSQL client install手順確認 | schedule有効、secrets設定、PostgreSQL 18 client導入、backup job成功、週次/手動restore drill成功 | workflowファイル、GitHub Actions画面、失敗/再実行ログ | Conditional Go | 修正commit後にGitHub Actionsを手動再実行し、backup/restore drill job成功を確認 | β公開前必須 |
 | ローカルガード系テスト | PASS | `npm run test:ops-guard`, `npm run test:ops-write-guards`, `npm run test:payment-reconciliation`, フロント `node tests\test-ops-ui-static.js` | 全てPASS | Shell実行ログ | OK | なし | β公開前確認済み |
 
 ## 1. デプロイ確認
@@ -102,7 +104,7 @@
 |----------|----------|----------|----------------------------|------|
 | [x] 暗号化バックアップが成功 | `npm run backup:database` の実行結果を確認 | `.dump.enc` と `.manifest.json` 作成 | `backups/` 配下のmanifest、`docs/BETA_EXECUTION_RESULT.md` | OK |
 | [x] 復元ドリルが検証DBで成功 | `npm run backup:restore-drill -- <backup-file>` 実行結果を確認 | `target=verification-db`, `encrypted=true`、復元成功 | restore drill log、`docs/BETA_EXECUTION_RESULT.md` | OK |
-| [ ] 日次バックアップ継続スケジュールが設定済み | `.github/workflows/database-backup.yml` に `0 18 * * *` の日次scheduleを確認。手動実行は `package-lock.json` 不在で `npm ci` 失敗。`.gitignore` 修正とlockfile追加後に再実行する | 24時間以内のRPOを満たす日次実行、`npm ci` 成功、backup job成功 | GitHub Actions run、Railway/PITR設定スクリーンショット | Conditional Go（Actions再実行待ち） |
+| [ ] 日次バックアップ継続スケジュールが設定済み | `.github/workflows/database-backup.yml` に `0 18 * * *` の日次scheduleを確認。手動実行は `pg_dump` 16.14 / server 18.3 のversion mismatchで失敗。PGDG `postgresql-client-18` へ修正後に再実行する | 24時間以内のRPOを満たす日次実行、PostgreSQL 18 client導入、backup job成功 | GitHub Actions run、Railway/PITR設定スクリーンショット | Conditional Go（Actions再実行待ち） |
 | [ ] バックアップ保管先が確認済み | 保存先、暗号化、アクセス権限を確認 | 権限が限定され、平文dumpが残らない | 保管先設定メモ、manifest | 要確認 |
 | [ ] 保持期間が確認済み | `BACKUP_RETENTION_COUNT` と保管ポリシーを確認 | 直近7世代以上を保持 | Railway/GitHub Actions設定、manifest | 要確認 |
 | [x] 復元手順が確認済み | Runbookの復元手順を確認 | 検証DBで実復元済み、本番DBへ誤復元しないguardあり | `docs/BETA_OPERATIONS_RUNBOOK.md` | OK |
@@ -139,7 +141,7 @@
 | [x] Windowsローカル短命Node通知テスト終了時のPrisma系assertを記録 | 通知送信後 `deliveredTargets=2` の後に終了時assertが出た事象を記録 | 通知/DB処理完了後の終了時事象として扱う。本番常駐APIのブロッカーにしない | 本ファイル、`docs/BETA_EXECUTION_RESULT.md` 追記推奨 | OK |
 | [ ] Staging未分離または未整備リスクを記載 | 現在のStaging有無を確認 | 本番書き込みE2Eを避けるため、Staging整備を継続課題化 | `docs/RELEASE_READINESS_CHECKLIST.md` | 継続 |
 | [x] DB完全停止時の対応方針を記載 | RunbookのDB完全停止時手順を確認 | 外部監視で検知し、`BETA_OPERATION_MODE_OVERRIDE=maintenance` で補完 | `docs/BETA_OPERATIONS_RUNBOOK.md` | OK |
-| [ ] 日次バックアップ継続設定の未実施状況を明記 | GitHub Actions手動実行は `package-lock.json` 不在で失敗。lockfile追加後の再実行結果を確認する | backup job成功、restore drill job成功または週次/手動で成功 | 本ファイル、GitHub Actions/Railway設定 | Conditional Go（Actions再実行待ち） |
+| [ ] 日次バックアップ継続設定の未実施状況を明記 | GitHub Actions手動実行はlockfile修正後に `pg_dump` version mismatchで失敗。PostgreSQL 18 client修正後の再実行結果を確認する | backup job成功、restore drill job成功または週次/手動で成功 | 本ファイル、GitHub Actions/Railway設定 | Conditional Go（Actions再実行待ち） |
 | [ ] 外部監視の未実施状況を明記 | Uptime/Railway/Vercel/Stripe通知設定を確認 | 未設定ならβ公開前必須、設定済みならOKへ更新 | 監視Dashboardスクリーンショット | 要確認 |
 | [ ] 本番相当E2E未実施状況を明記 | Staging E2E実行状況を確認 | 本番では再実行せず、Stagingで継続実施 | Staging E2Eログ | 継続 |
 
@@ -148,11 +150,11 @@
 | 項目 | 内容 |
 |------|------|
 | 判定 | **Conditional Go** |
-| 条件 | **24h自動停止ガードあり**。Backend/FrontendともGitHub `main` へpush済み。本番 `/api/public/status` 200 normal、`/api/health.operation` normal、本番 `js/config.js` ops版markerを確認済み。GitHub Actions日次バックアップworkflowはlockfile修正後の再実行成功が必要 |
+| 条件 | **24h自動停止ガードあり**。Backend/FrontendともGitHub `main` へpush済み。本番 `/api/public/status` 200 normal、`/api/health.operation` normal、本番 `js/config.js` ops版markerを確認済み。GitHub Actions日次バックアップworkflowはPostgreSQL 18 client修正後の再実行成功が必要 |
 | 未完了項目 | GitHub Actions `Database backup and restore drill` の再実行成功確認、Railway/Vercel Deploymentsのスクリーンショット保存、Railway/Vercel/Stripe/外部監視通知設定のDashboard確認、Stripe同一イベント再送、Staging本番相当E2E |
 | β公開前に必須で潰す項目 | Railway/Vercel最新デプロイ確認、本番 `prisma migrate deploy` / migration status確認、本番環境変数確認、本番読み取り系確認、外部監視/通知設定確認、日次バックアップ継続設定確認 |
 | β公開後に継続対応する項目 | Staging整備、本番相当E2E、Stripe同一イベント再送、週次復元ドリル、バックアップ保管/保持監査、Windows短命Node assertのCI/Linux再確認 |
-| 判断理由 | ローカル実装、検証DBドリル、通知、バックアップ、復元、書き込みガード、停止UI静的テストはPASS。さらにBackend/FrontendをGitHub `main` へpush後、本番API `/api/public/status` と `/api/health.operation`、本番フロント `config.js` ops markerはPASS。一方、日次バックアップworkflowはlockfile未コミットが原因で `npm ci` に失敗しており、修正後のActions再実行成功まではConditional Goとする |
+| 判断理由 | ローカル実装、検証DBドリル、通知、バックアップ、復元、書き込みガード、停止UI静的テストはPASS。さらにBackend/FrontendをGitHub `main` へpush後、本番API `/api/public/status` と `/api/health.operation`、本番フロント `config.js` ops markerはPASS。一方、日次バックアップworkflowはPostgreSQL clientのversion mismatchで失敗しており、PostgreSQL 18 client修正後のActions再実行成功まではConditional Goとする |
 
 ## Stagingで実施する本番相当E2E
 
@@ -169,4 +171,4 @@
 
 ## 共有用サマリー
 
-KAJISHIFT β公開前の現時点判定は **Conditional Go: 24h自動停止ガードあり、GitHub Actions日次バックアップ再実行待ち** です。暗号化バックアップ、検証DBへの復元ドリル、通知2系統到達、`payment_paused` / `maintenance` 疑似発火、ガード系テスト、フロント停止UI静的テストはPASS済みです。Backend/Frontendとも24h Auto Ops対応をGitHub `main` へpushし、本番 `/api/public/status` が `normal` を返すこと、`/api/health` に `operation` が含まれること、本番 `js/config.js` がops版markerを含むことを確認済みです。一方、GitHub Actions日次バックアップworkflowは `package-lock.json` 未コミットにより `npm ci` で失敗したため、lockfileをGit管理対象に戻した後の再実行成功をβ公開前必須条件とします。本番データ保護のため、本番での予約作成・PaymentIntent作成・領収書DLの再実行は行わず、既存Productionスモーク証跡を参照します。
+KAJISHIFT β公開前の現時点判定は **Conditional Go: 24h自動停止ガードあり、GitHub Actions日次バックアップ再実行待ち** です。暗号化バックアップ、検証DBへの復元ドリル、通知2系統到達、`payment_paused` / `maintenance` 疑似発火、ガード系テスト、フロント停止UI静的テストはPASS済みです。Backend/Frontendとも24h Auto Ops対応をGitHub `main` へpushし、本番 `/api/public/status` が `normal` を返すこと、`/api/health` に `operation` が含まれること、本番 `js/config.js` がops版markerを含むことを確認済みです。一方、GitHub Actions日次バックアップworkflowはRailway PostgreSQL 18.3に対してUbuntu標準の `pg_dump` 16.14を使ったためversion mismatchで失敗しました。PGDG公式APTから `postgresql-client-18` を導入する修正後の再実行成功をβ公開前必須条件とします。本番データ保護のため、本番での予約作成・PaymentIntent作成・領収書DLの再実行は行わず、既存Productionスモーク証跡を参照します。
