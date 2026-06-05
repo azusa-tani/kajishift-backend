@@ -6,6 +6,7 @@
  * 必須環境変数のチェック
  */
 const validateEnv = () => {
+  const { VALID_OPERATION_MODES } = require('./operationMode');
   const requiredEnvVars = [
     'DATABASE_URL',
     'JWT_SECRET',
@@ -37,6 +38,15 @@ const validateEnv = () => {
   // DATABASE_URLの形式チェック
   if (process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith('postgresql://')) {
     throw new Error('DATABASE_URLはPostgreSQLの接続URLである必要があります。');
+  }
+
+  const operationMode = String(process.env.BETA_OPERATION_MODE || 'normal').toLowerCase();
+  if (!VALID_OPERATION_MODES.includes(operationMode)) {
+    throw new Error(`BETA_OPERATION_MODEは次のいずれかにしてください: ${VALID_OPERATION_MODES.join(', ')}`);
+  }
+
+  if (process.env.BETA_RESUME_AT && Number.isNaN(Date.parse(process.env.BETA_RESUME_AT))) {
+    throw new Error('BETA_RESUME_ATはISO 8601形式などDateとして解釈できる値にしてください。');
   }
 
   const stripeEnabled = String(process.env.ENABLE_STRIPE_PAYMENTS || '').toLowerCase() === 'true';

@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const favoriteController = require('../controllers/favoriteController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
@@ -67,7 +68,7 @@ router.get('/', favoriteController.getFavorites);
  *       400:
  *         description: バリデーションエラー
  */
-router.post('/', favoriteController.addFavorite);
+router.post('/', requireOperation('favoriteWrite'), favoriteController.addFavorite);
 
 /**
  * @swagger
@@ -90,7 +91,7 @@ router.post('/', favoriteController.addFavorite);
  *       404:
  *         description: お気に入りが見つかりません
  */
-router.delete('/:id', favoriteController.removeFavorite);
+router.delete('/:id', requireOperation('favoriteWrite'), favoriteController.removeFavorite);
 
 /**
  * @swagger
@@ -113,7 +114,7 @@ router.delete('/:id', favoriteController.removeFavorite);
  *       404:
  *         description: お気に入りが見つかりません
  */
-router.delete('/worker/:workerId', favoriteController.removeFavoriteByWorkerId);
+router.delete('/worker/:workerId', requireOperation('favoriteWrite'), favoriteController.removeFavoriteByWorkerId);
 
 /**
  * @swagger

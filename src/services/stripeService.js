@@ -81,6 +81,22 @@ const retrievePaymentMethod = async (paymentMethodId) => {
   return getStripe().paymentMethods.retrieve(paymentMethodId);
 };
 
+const retrievePaymentIntent = async (paymentIntentId) => {
+  return getStripe().paymentIntents.retrieve(paymentIntentId);
+};
+
+const listRecentPaymentIntents = async ({ createdAfter, limit = 100 } = {}) => {
+  const params = {
+    limit: Math.min(Number(limit) || 100, 100)
+  };
+
+  if (createdAfter) {
+    params.created = { gte: Math.floor(new Date(createdAfter).getTime() / 1000) };
+  }
+
+  return getStripe().paymentIntents.list(params);
+};
+
 const detachPaymentMethod = async (paymentMethodId) => {
   return getStripe().paymentMethods.detach(paymentMethodId);
 };
@@ -101,6 +117,8 @@ module.exports = {
   getStripe,
   getOrCreateCustomer,
   createPaymentIntent,
+  retrievePaymentIntent,
+  listRecentPaymentIntents,
   createSetupIntent,
   retrievePaymentMethod,
   detachPaymentMethod,

@@ -34,6 +34,7 @@ const {
 
 // リクエストロギングミドルウェア
 const requestLogger = require('./middleware/requestLogger');
+const { getOperationStatus } = require('./config/operationMode');
 
 // セキュリティヘッダー（Helmet）
 app.use(helmetMiddleware);
@@ -108,12 +109,17 @@ if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_API_DOCS === 'tr
  *                   type: string
  *                   format: date-time
  */
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'KAJISHIFT API is running',
-    timestamp: new Date().toISOString()
-  });
+app.get('/api/health', async (req, res, next) => {
+  try {
+    res.json({ 
+      status: 'OK', 
+      message: 'KAJISHIFT API is running',
+      operation: await getOperationStatus(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 /**
@@ -254,6 +260,7 @@ app.get('/uploads/*', async (req, res, next) => {
 app.use('/uploads', express.static(uploadDir));
 
 // ルート
+app.use('/api/public', require('./routes/public'));
 app.use('/api/auth', require('./routes/auth'));
 
 const { authenticate, authorize } = require('./middleware/auth');
@@ -297,6 +304,10 @@ const server = http.createServer(app);
 // Socket.ioを初期化
 const { initializeSocket } = require('./config/socket');
 initializeSocket(server);
+
+// 24時間無人運用向けの監視ジョブ
+const { startOpsMonitorJob } = require('./jobs/opsMonitorJob');
+startOpsMonitorJob();
 
 // サーバー起動
 server.listen(PORT, () => {

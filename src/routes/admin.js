@@ -10,13 +10,23 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const supportController = require('../controllers/supportController');
+const opsController = require('../controllers/opsController');
 const { authenticate, authorize } = require('../middleware/auth');
+const { requireOperationForMethods } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
 
 // 管理者のみアクセス可能
 router.use(authorize('ADMIN'));
+
+// 運用復旧系はmaintenance中でも操作できる必要があるため、adminWriteガードより前に定義
+router.get('/ops/status', opsController.getStatus);
+router.post('/ops/mode', opsController.setMode);
+router.post('/ops/reconcile-payments', opsController.runReconciliation);
+router.post('/ops/evaluate-breakers', opsController.evaluateCircuitBreakers);
+
+router.use(requireOperationForMethods('adminWrite'));
 
 /**
  * @swagger

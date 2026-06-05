@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const messageController = require('../controllers/messageController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
@@ -77,6 +78,6 @@ router.get('/:bookingId', messageController.getMessages);
  *       401:
  *         description: 認証エラー
  */
-router.post('/', messageController.sendMessage);
+router.post('/', requireOperation('sendMessage'), messageController.sendMessage);
 
 module.exports = router;

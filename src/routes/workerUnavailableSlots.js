@@ -6,11 +6,12 @@
 const express = require('express');
 const router = express.Router();
 const workerUnavailableSlotController = require('../controllers/workerUnavailableSlotController');
+const { requireOperation } = require('../middleware/operationGuard');
 
 router.get('/', workerUnavailableSlotController.list);
-router.post('/', workerUnavailableSlotController.create);
-router.put('/sync', workerUnavailableSlotController.sync);
-router.delete('/', workerUnavailableSlotController.removeByQuery);
-router.delete('/:id', workerUnavailableSlotController.removeById);
+router.post('/', requireOperation('workerAvailabilityWrite'), workerUnavailableSlotController.create);
+router.put('/sync', requireOperation('workerAvailabilityWrite'), workerUnavailableSlotController.sync);
+router.delete('/', requireOperation('workerAvailabilityWrite'), workerUnavailableSlotController.removeByQuery);
+router.delete('/:id', requireOperation('workerAvailabilityWrite'), workerUnavailableSlotController.removeById);
 
 module.exports = router;

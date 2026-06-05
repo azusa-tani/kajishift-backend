@@ -7,6 +7,9 @@ const bookingService = require('./bookingService');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 const stripeService = require('./stripeService');
+const logger = require('../config/logger');
+const opsAutoPauseService = require('./opsAutoPauseService');
+const alertService = require('./alertService');
 
 const { serializeBooking, WORKER_PROFILE_FILES } = bookingService;
 
@@ -231,10 +234,51 @@ const createPaymentIntent = async (bookingId, userId) => {
     paymentId: payment.id
   });
 
-  payment = await prisma.payment.update({
-    where: { id: payment.id },
-    data: { transactionId: intent.id }
-  });
+  try {
+    payment = await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        transactionId: intent.id,
+        stripeStatus: intent.status || 'requires_payment_method',
+        lastSyncedAt: new Date()
+      }
+    });
+  } catch (error) {
+    await opsAutoPauseService.recordOpsEvent({
+      type: 'stripe_payment_update_failure',
+      severity: 'critical',
+      source: 'payment_intent_create',
+      fingerprint: `stripe_payment_update_failure:${payment.id}`,
+      paymentId: payment.id,
+      message: `Stripe PaymentIntent作成後のDB更新に失敗しました: ${error.message}`,
+      metadata: {
+        bookingId,
+        paymentIntentId: intent.id
+      }
+    }).catch(async (eventError) => {
+      logger.error('Failed to record PaymentIntent DB update failure', {
+        error: eventError.message,
+        originalError: error.message,
+        paymentIntentId: intent.id
+      });
+      await alertService.sendOpsAlert({
+        title: 'KAJISHIFT payment DB update failed after Stripe intent',
+        severity: 'critical',
+        message: 'Stripe PaymentIntent作成後にDB Payment更新が失敗しました。決済受付を手動停止し、Stripe DashboardとDB Paymentを照合してください。',
+        currentMode: 'unknown',
+        reason: error.message,
+        impact: 'Stripe側にPaymentIntentが存在し、DB側にtransactionIdが反映されていない可能性があります。',
+        recoveryHints: [
+          'Stripe DashboardでPaymentIntentを確認してください。',
+          '該当 bookingId/paymentId のDB Paymentを確認してください。',
+          'BETA_OPERATION_MODE_OVERRIDE=payment_paused または管理APIで決済受付を停止してください。'
+        ],
+        details: { bookingId, paymentId: payment.id, paymentIntentId: intent.id, recordError: eventError.message }
+      });
+    });
+    await opsAutoPauseService.evaluatePaymentCircuitBreaker().catch(() => {});
+    throw error;
+  }
 
   return {
     payment,
@@ -286,14 +330,54 @@ const markPaymentCompletedByIntent = async (paymentIntent) => {
   });
 
   if (!existingPayment) {
+    logger.warn('Stripe payment succeeded but Payment was not found', {
+      paymentIntentId: paymentIntent.id,
+      eventType: 'payment_intent.succeeded'
+    });
+    await opsAutoPauseService.recordOpsEvent({
+      type: 'stripe_payment_not_found',
+      severity: 'critical',
+      source: 'stripe_webhook',
+      fingerprint: `stripe_payment_not_found:${paymentIntent.id}`,
+      message: 'Stripe成功イベントに対応するPaymentがDBで見つかりません。',
+      metadata: {
+        paymentIntentId: paymentIntent.id,
+        metadata: paymentIntent.metadata || {}
+      }
+    });
+    await opsAutoPauseService.evaluatePaymentCircuitBreaker();
     return null;
+  }
+
+  if (paymentIntent.amount !== existingPayment.amount) {
+    await opsAutoPauseService.recordOpsEvent({
+      type: 'payment_amount_mismatch',
+      severity: 'critical',
+      source: 'stripe_webhook',
+      fingerprint: `payment_amount_mismatch:${existingPayment.id}`,
+      paymentId: existingPayment.id,
+      message: 'Stripe成功イベントの金額とDB Payment金額が一致しません。',
+      metadata: {
+        paymentIntentId: paymentIntent.id,
+        paymentAmount: existingPayment.amount,
+        stripeAmount: paymentIntent.amount
+      }
+    });
+    await opsAutoPauseService.evaluatePaymentCircuitBreaker();
+    return existingPayment;
+  }
+
+  if (existingPayment.status === 'COMPLETED') {
+    return existingPayment;
   }
 
   const payment = await prisma.payment.update({
     where: { id: existingPayment.id },
     data: {
       status: 'COMPLETED',
-      paymentMethod: 'stripe'
+      paymentMethod: 'stripe',
+      stripeStatus: paymentIntent.status || 'succeeded',
+      lastSyncedAt: new Date()
     },
     include: includePaymentRelations
   });
@@ -312,12 +396,32 @@ const markPaymentFailedByIntent = async (paymentIntent) => {
   });
 
   if (!payment) {
+    logger.warn('Stripe payment failed but Payment was not found', {
+      paymentIntentId: paymentIntent.id,
+      eventType: 'payment_intent.payment_failed'
+    });
+    await opsAutoPauseService.recordOpsEvent({
+      type: 'stripe_payment_not_found',
+      severity: 'critical',
+      source: 'stripe_webhook',
+      fingerprint: `stripe_payment_not_found:${paymentIntent.id}`,
+      message: 'Stripe失敗イベントに対応するPaymentがDBで見つかりません。',
+      metadata: {
+        paymentIntentId: paymentIntent.id,
+        metadata: paymentIntent.metadata || {}
+      }
+    });
+    await opsAutoPauseService.evaluatePaymentCircuitBreaker();
     return null;
   }
 
   return prisma.payment.update({
     where: { id: payment.id },
-    data: { status: 'FAILED' }
+    data: {
+      status: 'FAILED',
+      stripeStatus: paymentIntent.status || 'failed',
+      lastSyncedAt: new Date()
+    }
   });
 };
 
@@ -327,26 +431,67 @@ const handleStripeEvent = async (event) => {
   });
 
   if (existingEvent) {
+    logger.info('Stripe webhook duplicate ignored', {
+      eventId: event.id,
+      type: event.type
+    });
     return { received: true, duplicate: true };
   }
 
   await prisma.stripeEvent.create({
     data: {
       id: event.id,
-      type: event.type
+      type: event.type,
+      payload: {
+        paymentIntentId: event.data && event.data.object ? event.data.object.id : null
+      }
     }
   });
 
   try {
+    let paymentResult = null;
     if (event.type === 'payment_intent.succeeded') {
-      await markPaymentCompletedByIntent(event.data.object);
+      paymentResult = await markPaymentCompletedByIntent(event.data.object);
     } else if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {
-      await markPaymentFailedByIntent(event.data.object);
+      paymentResult = await markPaymentFailedByIntent(event.data.object);
     }
+
+    logger.info('Stripe webhook processed', {
+      eventId: event.id,
+      type: event.type,
+      paymentIntentId: event.data && event.data.object ? event.data.object.id : null,
+      paymentId: paymentResult ? paymentResult.id : null,
+      paymentStatus: paymentResult ? paymentResult.status : null
+    });
+
+    await prisma.stripeEvent.update({
+      where: { id: event.id },
+      data: {
+        paymentId: paymentResult ? paymentResult.id : null,
+        status: 'processed'
+      }
+    });
   } catch (error) {
-    await prisma.stripeEvent.delete({
-      where: { id: event.id }
+    await prisma.stripeEvent.update({
+      where: { id: event.id },
+      data: {
+        status: 'failed',
+        errorMessage: error.message
+      }
     }).catch(() => {});
+    await opsAutoPauseService.recordOpsEvent({
+      type: 'stripe_payment_update_failure',
+      severity: 'critical',
+      source: 'stripe_webhook',
+      stripeEventId: event.id,
+      fingerprint: `stripe_payment_update_failure:${event.id}`,
+      message: `Stripe WebhookのDB反映に失敗しました: ${error.message}`,
+      metadata: {
+        eventType: event.type,
+        paymentIntentId: event.data && event.data.object ? event.data.object.id : null
+      }
+    });
+    await opsAutoPauseService.evaluatePaymentCircuitBreaker();
     throw error;
   }
 

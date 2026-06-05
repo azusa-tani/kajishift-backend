@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const notificationController = require('../controllers/notificationController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
@@ -131,7 +132,7 @@ router.get('/unread-count', notificationController.getUnreadCount);
  *       401:
  *         description: 認証エラー
  */
-router.put('/read-all', notificationController.markAllAsRead);
+router.put('/read-all', requireOperation('notificationWrite'), notificationController.markAllAsRead);
 
 /**
  * @swagger
@@ -166,7 +167,7 @@ router.put('/read-all', notificationController.markAllAsRead);
  *       404:
  *         description: 通知が見つかりません
  */
-router.put('/:id/read', notificationController.markAsRead);
+router.put('/:id/read', requireOperation('notificationWrite'), notificationController.markAsRead);
 
 /**
  * @swagger
@@ -192,6 +193,6 @@ router.put('/:id/read', notificationController.markAsRead);
  *       404:
  *         description: 通知が見つかりません
  */
-router.delete('/:id', notificationController.deleteNotification);
+router.delete('/:id', requireOperation('notificationWrite'), notificationController.deleteNotification);
 
 module.exports = router;

@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const workerController = require('../controllers/workerController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 /**
  * @swagger
@@ -116,6 +117,6 @@ router.get('/:id', workerController.getWorkerById);
  *       401:
  *         description: 認証エラー
  */
-router.put('/me', authenticate, workerController.updateWorkerProfile);
+router.put('/me', authenticate, requireOperation('profileWrite'), workerController.updateWorkerProfile);
 
 module.exports = router;

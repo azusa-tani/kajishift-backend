@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
@@ -46,7 +47,7 @@ router.use(authenticate);
  */
 router.get('/', paymentController.getPayments);
 
-router.post('/intent', paymentController.createPaymentIntent);
+router.post('/intent', requireOperation('createPaymentIntent'), paymentController.createPaymentIntent);
 
 /**
  * @swagger
@@ -82,7 +83,7 @@ router.post('/intent', paymentController.createPaymentIntent);
  *       403:
  *         description: 顧客のみ決済可能
  */
-router.post('/', paymentController.processPayment);
+router.post('/', requireOperation('createPaymentIntent'), paymentController.processPayment);
 
 /**
  * @swagger

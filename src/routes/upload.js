@@ -11,6 +11,7 @@ const router = express.Router();
 const uploadController = require('../controllers/uploadController');
 const { authenticate } = require('../middleware/auth');
 const { uploadSingle } = require('../middleware/upload');
+const { requireOperation } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
@@ -57,7 +58,7 @@ router.use(authenticate);
  *       401:
  *         description: 認証エラー
  */
-router.post('/', uploadSingle('file'), uploadController.uploadFile);
+router.post('/', requireOperation('uploadFile'), uploadSingle('file'), uploadController.uploadFile);
 
 /**
  * @swagger
@@ -175,6 +176,6 @@ router.get('/:id/download', uploadController.downloadFile);
  *       404:
  *         description: ファイルが見つかりません
  */
-router.delete('/:id', uploadController.deleteFile);
+router.delete('/:id', requireOperation('deleteFile'), uploadController.deleteFile);
 
 module.exports = router;

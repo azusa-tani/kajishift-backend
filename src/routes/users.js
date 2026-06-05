@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 /**
  * @swagger
@@ -61,7 +62,7 @@ router.get('/me', authenticate, userController.getMe);
  *       401:
  *         description: 認証エラー
  */
-router.put('/me', authenticate, userController.updateMe);
+router.put('/me', authenticate, requireOperation('profileWrite'), userController.updateMe);
 
 /**
  * @swagger
@@ -91,7 +92,7 @@ router.put('/me', authenticate, userController.updateMe);
  *       401:
  *         description: 認証エラー
  */
-router.put('/me/password', authenticate, userController.changePassword);
+router.put('/me/password', authenticate, requireOperation('profileWrite'), userController.changePassword);
 
 /**
  * @swagger

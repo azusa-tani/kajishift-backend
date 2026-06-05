@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const cardController = require('../controllers/cardController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
@@ -32,7 +33,7 @@ router.use(authenticate);
  */
 router.get('/', cardController.getCards);
 
-router.post('/setup-intent', cardController.createSetupIntent);
+router.post('/setup-intent', requireOperation('createSetupIntent'), cardController.createSetupIntent);
 
 /**
  * @swagger
@@ -84,7 +85,7 @@ router.post('/setup-intent', cardController.createSetupIntent);
  *       403:
  *         description: 顧客のみカード追加可能
  */
-router.post('/', cardController.addCard);
+router.post('/', requireOperation('cardWrite'), cardController.addCard);
 
 /**
  * @swagger
@@ -125,7 +126,7 @@ router.post('/', cardController.addCard);
  *       404:
  *         description: カードが見つかりません
  */
-router.put('/:id', cardController.updateCard);
+router.put('/:id', requireOperation('cardWrite'), cardController.updateCard);
 
 /**
  * @swagger
@@ -152,6 +153,6 @@ router.put('/:id', cardController.updateCard);
  *       404:
  *         description: カードが見つかりません
  */
-router.delete('/:id', cardController.deleteCard);
+router.delete('/:id', requireOperation('cardWrite'), cardController.deleteCard);
 
 module.exports = router;

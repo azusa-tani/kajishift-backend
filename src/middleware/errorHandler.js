@@ -3,6 +3,13 @@
  */
 
 const logger = require('../config/logger');
+const opsAutoPauseService = require('../services/opsAutoPauseService');
+
+const shouldRecordApi5xx = (req, status) => {
+  if (status < 500) return false;
+  const path = req.originalUrl || req.url || '';
+  return !path.startsWith('/api/public/status') && !path.startsWith('/api/health');
+};
 
 const errorHandler = (err, req, res, next) => {
   // エラーログを記録
@@ -42,6 +49,24 @@ const errorHandler = (err, req, res, next) => {
   // デフォルトエラー
   const status = err.status || err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
+
+  if (shouldRecordApi5xx(req, status)) {
+    opsAutoPauseService.recordOpsEvent({
+      type: 'api_5xx_error',
+      severity: 'critical',
+      source: 'error_handler',
+      fingerprint: `api_5xx_error:${req.method}:${req.route ? req.route.path : req.path}`,
+      message: `API 5xxエラーを検知しました: ${message}`,
+      metadata: {
+        method: req.method,
+        url: req.originalUrl || req.url,
+        status,
+        code: err.code || null
+      }
+    }).then(() => opsAutoPauseService.evaluateMaintenanceCircuitBreaker()).catch((eventError) => {
+      logger.error('Failed to record API 5xx ops event', { error: eventError.message });
+    });
+  }
 
   res.status(status).json({
     error: message,

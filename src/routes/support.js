@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const supportController = require('../controllers/supportController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
@@ -76,7 +77,7 @@ router.get('/', supportController.getSupportTickets);
  *       401:
  *         description: 認証エラー
  */
-router.post('/', supportController.createSupportTicket);
+router.post('/', requireOperation('createSupportTicket'), supportController.createSupportTicket);
 
 /**
  * @swagger

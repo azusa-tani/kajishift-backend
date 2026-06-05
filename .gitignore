@@ -35,3 +35,9 @@ build/
 
 # アップロードファイル
 uploads/
+
+# バックアップ成果物
+backups/
+*.dump
+*.dump.enc
+*.manifest.json

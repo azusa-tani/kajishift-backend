@@ -12,6 +12,7 @@ const authController = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { authLimiter, passwordResetLimiter } = require('../middleware/security');
 const { uploadSingle } = require('../middleware/upload');
+const { requireOperation } = require('../middleware/operationGuard');
 
 /**
  * @swagger
@@ -74,7 +75,7 @@ const { uploadSingle } = require('../middleware/upload');
  *               $ref: '#/components/schemas/Error'
  */
 // 登録API（multipart/form-data対応）
-router.post('/register', authLimiter, uploadSingle('idDocument'), authController.register);
+router.post('/register', authLimiter, requireOperation('registerUser'), uploadSingle('idDocument'), authController.register);
 
 /**
  * @swagger

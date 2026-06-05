@@ -124,6 +124,8 @@ model Payment {
   paymentMethod String        @map("payment_method") // "credit_card", "bank_transfer"など
   status        PaymentStatus @default(PENDING)
   transactionId String?       @unique @map("transaction_id") // 外部決済システムのトランザクションID
+  stripeStatus  String?       @map("stripe_status")
+  lastSyncedAt  DateTime?     @map("last_synced_at")
   
   // リレーション
   booking       Booking       @relation(fields: [bookingId], references: [id])
@@ -139,11 +141,60 @@ model Payment {
 model StripeEvent {
   id          String   @id
   type        String
+  paymentId   String?  @map("payment_id")
+  status      String   @default("processed")
+  errorMessage String? @map("error_message") @db.Text
+  payload     Json?
   processedAt DateTime @default(now()) @map("processed_at")
 
   @@map("stripe_events")
   @@index([type])
+  @@index([status])
+  @@index([paymentId])
   @@index([processedAt])
+}
+
+// 自動/手動停止・復旧の監査ログ
+model OpsIncident {
+  id           String    @id @default(uuid())
+  mode         String
+  reason       String    @db.Text
+  trigger      String
+  severity     String    @default("warning")
+  status       String    @default("OPEN")
+  autoPausedAt DateTime? @map("auto_paused_at")
+  resolvedAt   DateTime? @map("resolved_at")
+  createdBy    String?   @map("created_by")
+  metadata     Json?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([mode])
+  @@index([trigger])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ops_incidents")
+}
+
+// 監視・サーキットブレーカー用イベント
+model OpsEvent {
+  id            String   @id @default(uuid())
+  type          String
+  severity      String   @default("info")
+  source        String?
+  fingerprint   String?
+  paymentId     String?  @map("payment_id")
+  stripeEventId String?  @map("stripe_event_id")
+  message       String   @db.Text
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([type])
+  @@index([severity])
+  @@index([source])
+  @@index([fingerprint])
+  @@index([createdAt])
+  @@map("ops_events")
 }
 
 // レビュー・評価

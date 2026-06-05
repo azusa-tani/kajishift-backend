@@ -1,0 +1,62 @@
+name: Database backup and restore drill
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+    - cron: '30 19 * * 0'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      OPS_ALERT_WEBHOOK_URLS: ${{ secrets.OPS_ALERT_WEBHOOK_URLS }}
+      BACKUP_RETENTION_COUNT: '7'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Install dependencies
+        run: npm ci
+      - name: Create encrypted backup
+        run: npm run backup:database
+      - name: Upload encrypted backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kajishift-db-backup
+          path: backups/
+          retention-days: 7
+
+  weekly-restore-drill:
+    if: github.event.schedule == '30 19 * * 0' || github.event_name == 'workflow_dispatch'
+    needs: backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      RESTORE_DATABASE_URL: ${{ secrets.RESTORE_DATABASE_URL }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      RESTORE_DRILL_CONFIRM: verification-db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Download backup artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kajishift-db-backup
+          path: backups/
+      - name: Run restore drill against verification DB
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest_backup="$(ls -1t backups/*.dump.enc backups/*.dump 2>/dev/null | head -n 1)"
+          npm run backup:restore-drill -- "$latest_backup"

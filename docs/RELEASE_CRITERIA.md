@@ -20,6 +20,7 @@
 | API / Socket.io / PDF | Railway | `README.md`、`docs/FRONTEND_INTEGRATION.md`、`docs/WORKER_UNAVAILABLE_SLOTS_API.md`、`docs/INSTALL_PDFKIT.md` |
 | 静的フロント + PWA | Vercel | フロントリポジトリの `js/config.js`、Service Worker 設定 |
 | 連携 | Railway ↔ Vercel | 本書 §3、`CORS_ORIGIN`、Socket 認証 |
+| β運用・24h Auto Ops | Railway / Vercel / Stripe | `docs/BETA_OPERATIONS_RUNBOOK.md`、`docs/BETA_EXECUTION_RESULT.md`、`docs/BETA_RELEASE_GONOGO_CHECKLIST.md`、`docs/E2E_EDGE_CASE_MATRIX.md` |
 
 ### 1.3 用語
 
@@ -173,6 +174,10 @@ Prisma の `Booking` に `completedAt`（DB 列 `completed_at`）が存在し、
 | O-01 | Must | Railway に紐づく PostgreSQL の **バックアップ方針**（プロバイダの自動バックアップ有無、リストア手順のリンク）がドキュメント化されていること。 |
 | O-02 | Should | インシデント時の連絡先（オンコール）とロールバック手順が 1 ページにまとまっていること。 |
 | O-03 | Must | 本番 **ログにパスワード・JWT・DATABASE_URL を出さない**こと。 |
+| O-04 | Must | `GET /api/public/status` とDB永続運用モードにより、`payment_paused` / `maintenance` を再デプロイ後も維持できること。 |
+| O-05 | Must | 決済不整合、Webhook失敗、API 5xx、DB障害の自動停止または外部override手順がRunbook化されていること。 |
+| O-06 | Must | `OPS_ALERT_WEBHOOK_URLS` 2系統以上、バックアップ成功/失敗通知、自動停止通知の到達確認が記録されていること。 |
+| O-07 | Must | RPO 24時間以内、RTO 4時間以内を満たす日次暗号化バックアップと週次復元ドリルの証跡があること。 |
 
 ---
 
@@ -209,3 +214,5 @@ Prisma の `Booking` に `completedAt`（DB 列 `completed_at`）が存在し、
 | 日付 | 内容 |
 |------|------|
 | 2026-05-08 | 初版。Railway / Vercel、Booking `completedAt`、PDFKit、Socket.io、RBAC を反映。 |
+| 2026-06-03 | β運用・24h Auto Ops、DB永続運用モード、自動停止、通知2系統、暗号化バックアップ/復元ドリル基準を追加。 |
+| 2026-06-04 | 暗号化バックアップ、検証DB復元ドリル、通知2系統、`payment_paused` / `maintenance` 疑似発火の最終確認完了を反映。 |

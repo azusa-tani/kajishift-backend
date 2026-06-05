@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/bookingController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 // すべてのルートで認証が必要
 router.use(authenticate);
@@ -114,7 +115,7 @@ router.get('/', bookingController.getBookings);
  *       403:
  *         description: 顧客のみ予約作成可能
  */
-router.post('/', bookingController.createBooking);
+router.post('/', requireOperation('createBooking'), bookingController.createBooking);
 
 /**
  * @swagger
@@ -184,7 +185,7 @@ router.get('/:id', bookingController.getBookingById);
  *       401:
  *         description: 認証エラー
  */
-router.put('/:id', bookingController.updateBooking);
+router.put('/:id', requireOperation('bookingWrite'), bookingController.updateBooking);
 
 /**
  * @swagger
@@ -207,7 +208,7 @@ router.put('/:id', bookingController.updateBooking);
  *       401:
  *         description: 認証エラー
  */
-router.delete('/:id', bookingController.cancelBooking);
+router.delete('/:id', requireOperation('bookingWrite'), bookingController.cancelBooking);
 
 /**
  * @swagger
@@ -234,7 +235,7 @@ router.delete('/:id', bookingController.cancelBooking);
  *       404:
  *         description: 予約が見つかりません
  */
-router.post('/:id/accept', bookingController.acceptBooking);
+router.post('/:id/accept', requireOperation('bookingWrite'), bookingController.acceptBooking);
 
 /**
  * @swagger
@@ -270,7 +271,7 @@ router.post('/:id/accept', bookingController.acceptBooking);
  *       404:
  *         description: 予約が見つかりません
  */
-router.post('/:id/reject', bookingController.rejectBooking);
+router.post('/:id/reject', requireOperation('bookingWrite'), bookingController.rejectBooking);
 
 /**
  * @swagger
@@ -297,6 +298,6 @@ router.post('/:id/reject', bookingController.rejectBooking);
  *       404:
  *         description: 予約が見つかりません
  */
-router.post('/:id/complete', bookingController.completeBooking);
+router.post('/:id/complete', requireOperation('bookingWrite'), bookingController.completeBooking);
 
 module.exports = router;

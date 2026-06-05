@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const reviewController = require('../controllers/reviewController');
 const { authenticate } = require('../middleware/auth');
+const { requireOperation } = require('../middleware/operationGuard');
 
 /**
  * @swagger
@@ -46,7 +47,7 @@ const { authenticate } = require('../middleware/auth');
  *       403:
  *         description: 依頼者のみレビュー投稿可能
  */
-router.post('/', authenticate, reviewController.createReview);
+router.post('/', authenticate, requireOperation('createReview'), reviewController.createReview);
 
 /**
  * @swagger
