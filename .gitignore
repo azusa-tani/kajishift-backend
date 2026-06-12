@@ -40,3 +40,6 @@ backups/
 *.dump
 *.dump.enc
 *.manifest.json
+
+# 一時作業メモ
+KAJISHIFT_beta_test_spec_*.xlsx
