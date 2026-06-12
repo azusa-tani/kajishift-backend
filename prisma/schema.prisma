@@ -60,6 +60,8 @@ model User {
   favoritedBy        Favorite[] @relation("WorkerFavorites") // このワーカーをお気に入りに追加しているユーザー
   creditCards        CreditCard[] // クレジットカード情報
   workerUnavailableSlots WorkerUnavailableSlot[]
+  workerTestSubmissions WorkerTestSubmission[] @relation("WorkerTestSubmissions")
+  reviewedWorkerTestSubmissions WorkerTestSubmission[] @relation("ReviewedWorkerTestSubmissions")
   /// アプリ内メール通知などのユーザー別設定（JSON v1）
   notificationPrefs Json? @map("notification_prefs")
   stripeCustomerId String? @unique @map("stripe_customer_id")
@@ -85,6 +87,34 @@ model WorkerUnavailableSlot {
   @@unique([workerId, localDate, slotIndex])
   @@index([workerId, localDate])
   @@map("worker_unavailable_slots")
+}
+
+model WorkerTestSubmission {
+  id                 String                     @id @default(uuid())
+  workerId           String                     @map("worker_id")
+  testAnswer         String                     @map("test_answer") @db.Text
+  aiScore            Int?                       @map("ai_score")
+  aiInitialDecision  AiInitialDecision?         @map("ai_initial_decision")
+  aiReason           String?                    @map("ai_reason") @db.Text
+  aiWarnings         Json?                      @map("ai_warnings")
+  aiReviewedAt       DateTime?                  @map("ai_reviewed_at")
+  aiErrorMessage     String?                    @map("ai_error_message") @db.Text
+  adminFinalDecision AdminFinalDecision?        @map("admin_final_decision")
+  adminComment       String?                    @map("admin_comment") @db.Text
+  reviewedByAdminId  String?                    @map("reviewed_by_admin_id")
+  reviewedAt         DateTime?                  @map("reviewed_at")
+  status             WorkerTestSubmissionStatus @default(TEST_SUBMITTED)
+
+  worker             User                       @relation("WorkerTestSubmissions", fields: [workerId], references: [id], onDelete: Cascade)
+  reviewedByAdmin    User?                      @relation("ReviewedWorkerTestSubmissions", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+
+  createdAt          DateTime                   @default(now()) @map("created_at")
+  updatedAt          DateTime                   @updatedAt @map("updated_at")
+
+  @@index([workerId, status])
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@map("worker_test_submissions")
 }
 
 // 予約
@@ -272,6 +302,25 @@ enum WorkerApprovalStatus {
   PENDING      // 審査中
   APPROVED     // 承認済み
   REJECTED     // 却下
+}
+
+enum AiInitialDecision {
+  PASS_CANDIDATE
+  FAIL_CANDIDATE
+  NEEDS_REVIEW
+}
+
+enum AdminFinalDecision {
+  PASSED
+  FAILED
+}
+
+enum WorkerTestSubmissionStatus {
+  TEST_SUBMITTED
+  AI_REVIEWED
+  NEEDS_REVIEW
+  ADMIN_PASSED
+  ADMIN_FAILED
 }
 
 enum BookingStatus {

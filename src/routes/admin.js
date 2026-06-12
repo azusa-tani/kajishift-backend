@@ -314,6 +314,39 @@ router.put('/workers/:id/approve', adminController.approveWorker);
 
 /**
  * @swagger
+ * /admin/worker-test-submissions:
+ *   get:
+ *     summary: ワーカーテスト回答一覧取得（管理者のみ）
+ *     tags: [管理者]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/worker-test-submissions', adminController.getWorkerTestSubmissions);
+
+/**
+ * @swagger
+ * /admin/worker-test-submissions/{id}:
+ *   get:
+ *     summary: ワーカーテスト回答詳細取得（管理者のみ）
+ *     tags: [管理者]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/worker-test-submissions/:id', adminController.getWorkerTestSubmissionById);
+
+/**
+ * @swagger
+ * /admin/worker-test-submissions/{id}/final-review:
+ *   post:
+ *     summary: ワーカーテスト回答の最終判定（管理者のみ）
+ *     tags: [管理者]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/worker-test-submissions/:id/final-review', adminController.finalizeWorkerTestSubmission);
+
+/**
+ * @swagger
  * /admin/workers/{id}:
  *   put:
  *     summary: ワーカー情報更新（管理者のみ）

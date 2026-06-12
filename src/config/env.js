@@ -67,6 +67,11 @@ const validateEnv = () => {
     }
   }
 
+  const aiWorkerTestReviewEnabled = String(process.env.ENABLE_AI_WORKER_TEST_REVIEW || '').toLowerCase() === 'true';
+  if (aiWorkerTestReviewEnabled && !process.env.OPENAI_API_KEY) {
+    throw new Error('ワーカーテストAI一次判定を有効にする場合はOPENAI_API_KEYを設定してください。');
+  }
+
   console.log('✅ 環境変数のバリデーション完了');
 };
 

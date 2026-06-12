@@ -271,6 +271,11 @@ app.use(
   authorize('WORKER'),
   require('./routes/workerUnavailableSlots')
 );
+app.use(
+  '/api/workers/me/screening-test',
+  authenticate,
+  require('./routes/workerTestSubmissions')
+);
 
 // その他のルート
 app.use('/api/users', require('./routes/users'));

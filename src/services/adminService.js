@@ -5,6 +5,7 @@
 const prisma = require('../config/database');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
+const workerTestSubmissionService = require('./workerTestSubmissionService');
 const logger = require('../config/logger');
 const socketService = require('../config/socket');
 const bcrypt = require('bcrypt');
@@ -184,6 +185,24 @@ const getAdminWorkerById = async (workerId) => {
   };
 };
 
+const ensureWorkerTestAdminPassed = async (workerId) => {
+  const passedSubmission = await prisma.workerTestSubmission.findFirst({
+    where: {
+      workerId,
+      status: 'ADMIN_PASSED',
+      adminFinalDecision: 'PASSED'
+    },
+    orderBy: { reviewedAt: 'desc' },
+    select: { id: true }
+  });
+
+  if (!passedSubmission) {
+    const error = new Error('ワーカーテストの管理者最終判定が合格になるまで、このAPIから直接承認できません。テスト審査画面で最終判定してください。');
+    error.status = 409;
+    throw error;
+  }
+};
+
 /**
  * ワーカーを承認（管理者のみ）
  * @param {string} workerId - ワーカーID
@@ -212,6 +231,10 @@ const approveWorker = async (workerId, adminId, approvalStatus) => {
 
   if (worker.role !== 'WORKER') {
     throw new Error('指定されたユーザーはワーカーではありません');
+  }
+
+  if (approvalStatus === 'APPROVED') {
+    await ensureWorkerTestAdminPassed(workerId);
   }
 
   // ワーカーの承認ステータスを更新
@@ -272,6 +295,32 @@ const approveWorker = async (workerId, adminId, approvalStatus) => {
   }
 
   return updatedWorker;
+};
+
+/**
+ * ワーカーテスト回答一覧を取得（管理者のみ）
+ * @param {object} filters - フィルター（status, page, limit）
+ */
+const getWorkerTestSubmissions = async (filters = {}) => {
+  return workerTestSubmissionService.getAdminSubmissions(filters);
+};
+
+/**
+ * ワーカーテスト回答詳細を取得（管理者のみ）
+ * @param {string} submissionId - 提出ID
+ */
+const getWorkerTestSubmissionById = async (submissionId) => {
+  return workerTestSubmissionService.getAdminSubmissionById(submissionId);
+};
+
+/**
+ * ワーカーテスト回答の管理者最終判定を保存（管理者のみ）
+ * @param {string} submissionId - 提出ID
+ * @param {string} adminId - 管理者ID
+ * @param {object} payload - 最終判定データ
+ */
+const finalizeWorkerTestSubmission = async (submissionId, adminId, payload = {}) => {
+  return workerTestSubmissionService.finalizeAdminReview(submissionId, adminId, payload);
 };
 
 /**
@@ -1547,6 +1596,9 @@ const updateWorker = async (workerId, updateData) => {
     if (!validApprovalStatuses.includes(updateData.approvalStatus)) {
       throw new Error('無効な承認ステータスです');
     }
+    if (updateData.approvalStatus === 'APPROVED') {
+      await ensureWorkerTestAdminPassed(workerId);
+    }
     data.approvalStatus = updateData.approvalStatus;
   }
 
@@ -1994,6 +2046,9 @@ module.exports = {
   getWorkers,
   getAdminWorkerById,
   approveWorker,
+  getWorkerTestSubmissions,
+  getWorkerTestSubmissionById,
+  finalizeWorkerTestSubmission,
   updateUser,
   deleteUser,
   updateWorker,

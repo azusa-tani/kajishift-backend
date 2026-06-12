@@ -97,6 +97,63 @@ const approveWorker = async (req, res, next) => {
 };
 
 /**
+ * ワーカーテスト回答一覧を取得（管理者のみ）
+ * GET /api/admin/worker-test-submissions
+ */
+const getWorkerTestSubmissions = async (req, res, next) => {
+  try {
+    const result = await adminService.getWorkerTestSubmissions({
+      status: req.query.status,
+      page: req.query.page,
+      limit: req.query.limit
+    });
+
+    res.json({
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * ワーカーテスト回答詳細を取得（管理者のみ）
+ * GET /api/admin/worker-test-submissions/:id
+ */
+const getWorkerTestSubmissionById = async (req, res, next) => {
+  try {
+    const submission = await adminService.getWorkerTestSubmissionById(req.params.id);
+
+    res.json({
+      data: submission
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * ワーカーテスト回答の最終判定を保存（管理者のみ）
+ * POST /api/admin/worker-test-submissions/:id/final-review
+ */
+const finalizeWorkerTestSubmission = async (req, res, next) => {
+  try {
+    const submission = await adminService.finalizeWorkerTestSubmission(
+      req.params.id,
+      req.user.id,
+      req.body
+    );
+
+    res.json({
+      message: 'ワーカーテストの最終判定を保存しました',
+      data: submission
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * 予約レポートを取得（管理者のみ）
  * GET /api/admin/reports/bookings
  */
@@ -732,6 +789,9 @@ module.exports = {
   getWorkers,
   getWorkerById,
   approveWorker,
+  getWorkerTestSubmissions,
+  getWorkerTestSubmissionById,
+  finalizeWorkerTestSubmission,
   updateUser,
   deleteUser,
   updateWorker,
