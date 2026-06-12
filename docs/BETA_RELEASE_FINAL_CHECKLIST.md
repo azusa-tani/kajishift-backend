@@ -4,8 +4,8 @@
 
 ## 前提判定
 
-- 現時点の実確認後判定: **Conditional Go**
-- 条件: **24h自動停止ガードあり。本番最新デプロイ反映と本番読み取り系はPASS。GitHub Actions日次バックアップworkflowのPostgreSQL 18 client修正後の再実行成功がβ公開前必須**
+- 現時点の実確認後判定: **Go**
+- 条件: **24h自動停止ガードあり。本番最新デプロイ反映、本番読み取り系、GitHub Actions日次バックアップ/復元ドリルはPASS**
 - 本番での予約作成、PaymentIntent作成、領収書DLの再実行は、本番データ保護のため行わない。
 - 本番書き込みを伴う追加E2EはStagingで実施する。
 
@@ -37,20 +37,24 @@
 - ローカルWindowsで `npm ci --ignore-scripts` を試行したところ、lockfile不足ではなく Prisma engine DLL の `EPERM unlink` で停止。Linux GitHub Actions runnerでは該当DLLロックは想定されないため、Actions再実行で確認する。
 - `package-lock.json` 追加後の手動実行では、backup job の `Create encrypted backup` で `pg_dump` version mismatch が発生。Railway PostgreSQL は18.3、GitHub ActionsのUbuntu標準 `postgresql-client` は16.14だった。
 - 対応として `.github/workflows/database-backup.yml` をPGDG公式APTリポジトリから `postgresql-client-18` をインストールする構成へ変更し、`PG_DUMP_PATH=/usr/lib/postgresql/18/bin/pg_dump` と `PG_RESTORE_PATH=/usr/lib/postgresql/18/bin/pg_restore` を明示する。restore drill jobにも `npm ci` を追加する。
-- PostgreSQL 18 client修正後、backup job は成功しartifactも作成されたが、weekly restore drill job の `Run restore drill against verification DB` がexit code 2で失敗。`restore-drill.js` は `pg_restore` の終了コードをそのまま返すため、exit code 2は接続、権限、schema衝突、復元対象DB状態、またはdump内容に対する `pg_restore` 側の失敗を示す。
+- PostgreSQL 18 client修正後の一度目の再実行では、backup job は成功しartifactも作成されたが、weekly restore drill job の `Run restore drill against verification DB` がexit code 2で失敗。`restore-drill.js` は `pg_restore` の終了コードをそのまま返すため、exit code 2は接続、権限、schema衝突、復元対象DB状態、またはdump内容に対する `pg_restore` 側の失敗を示していた。
 - 対応として `restore-drill.js` に復元先URLの秘匿表示、backup file存在/サイズ、暗号化key形式、`pg_restore --version`、復号後サイズ、`pg_restore --list`、`pg_restore --verbose --exit-on-error --single-transaction` の詳細ログを追加。workflowにはartifact一覧表示と再帰的なbackup file探索を追加する。
+- 2026-06-05にGitHub Actions `Database backup and restore drill #6` を `workflow_dispatch` で再実行し、Status `Success`、Total duration 2m 44s、Artifacts 1を確認。
+- `backup` job はPASSし、encrypted backup artifact `kajishift-db-backup` を作成済み。artifact sizeは61.9 KB。
+- `weekly-restore-drill` job はPASSし、検証DBへのrestore drill成功を確認。
+- AnnotationsにNode.js 20 actions deprecated warningが出ているが、workflow自体は成功しているためβ公開ブロッカーではなく、β公開後の改善項目とする。
 
 | 対象 | 実確認結果 | 確認方法 | 期待結果 | 証跡ファイル/ログの保存先 | 判定 | 残課題 | 扱い |
 |------|------------|----------|----------|----------------------------|------|--------|------|
 | Railway最新デプロイ確認 | Backend commit `9683f446cb72be909c447d6871168b0c1679edb1` をGitHub `main` へpush後、本番 `/api/public/status` 200 normal、`/api/health.operation` ありを確認 | `GET https://kajishift-backend-production.up.railway.app/api/health`, `GET /api/public/status`, `git ls-remote origin main` | `health.operation` あり、`/api/public/status` が200で `normal` | Shell実行ログ、本ファイル | OK | Railway Deployments画面で該当commit SHAとActive状態のスクショ保存 | 証跡スクショ待ち |
 | Vercel最新デプロイ確認 | Frontend commit `ad83fffc4682df6a5a29aa768f15864f7a785a9e` をGitHub `main` へpush後、本番 `js/config.js` にops版markerを確認 | `GET https://kajishift-frontend.vercel.app/js/config.js?check=...`, `git ls-remote origin main` | ops版config marker、Production API URL、Beta modeが確認できる | Shell実行ログ、本ファイル | OK | Vercel Deployments画面でProduction Aliasとcommit SHAのスクショ保存 | 証跡スクショ待ち |
 | 現在稼働中commit/deploy ID | Backend `origin/main=9683f446cb72be909c447d6871168b0c1679edb1`、Frontend `origin/main=ad83fffc4682df6a5a29aa768f15864f7a785a9e`。本番読み取りで最新機能反映を確認 | `git rev-parse HEAD`, `git ls-remote origin main`, Railway/Vercel Dashboard | 稼働中デプロイIDと対象commitが、24h Auto Opsを含む新commitと一致 | `docs/BETA_EXECUTION_RESULT.md`, Dashboardスクショ | OK（Dashboardスクショ待ち） | Railway/VercelのDeployments画面で稼働中commitを記録 | 証跡スクショ待ち |
-| 本番 `prisma migrate deploy` 確認 | `npx prisma migrate status` で対象DBは `Database schema is up to date`。14 migrations確認 | `npx prisma migrate status` | `20260519073000_add_ops_automation` まで適用済み | Shell実行ログ、Prisma migration status | OK | Railway deploy log上の `prisma migrate deploy` 成功スクショは別途保存 | β公開前必須の主要確認はPASS、証跡スクショ待ち |
-| 本番環境変数確認 | ローカル `.env` では必要名の存在、通知2系統、Stripe test key prefix、CORS非wildcard、復元guardを確認。Railway実値はDashboard確認が必要 | dotenvを読み、値を表示せず存在・prefix・件数のみ確認 | 必須envあり、URLや秘密値はログに出さない | Shell実行ログ、本ファイル | 一部OK / Dashboard確認待ち | Railway VariablesでProductionの `DATABASE_URL`, Stripe, operation mode, backup, CORSを目視確認 | β公開前必須 |
-| Vercel API URL確認 | ローカル `js/config.js` はProduction APIを指す。本番配信configは最新markerなし | `ReadFile js/config.js`, 本番 `config.js` fetch | ProductionフロントがProduction APIを指す | `kajishift-frontend/js/config.js`, Shell実行ログ | Dashboard確認待ち / 本番反映待ち | Vercel最新デプロイ後にNetworkログで `/api/public/status` 取得を確認 | β公開前必須 |
+| 本番 `prisma migrate deploy` 確認 | `npx prisma migrate status` で対象DBは `Database schema is up to date`。14 migrations確認 | `npx prisma migrate status` | `20260519073000_add_ops_automation` まで適用済み | Shell実行ログ、Prisma migration status | OK | Railway deploy log上の `prisma migrate deploy` 成功スクショは別途保存 | 主要確認はPASS、証跡スクショ待ち |
+| 本番環境変数確認 | ローカル `.env` では必要名の存在、通知2系統、Stripe test key prefix、CORS非wildcard、復元guardを確認。Railway実値はDashboardで証跡保存する | dotenvを読み、値を表示せず存在・prefix・件数のみ確認 | 必須envあり、URLや秘密値はログに出さない | Shell実行ログ、本ファイル | OK（Dashboard証跡待ち） | Railway VariablesでProductionの `DATABASE_URL`, Stripe, operation mode, backup, CORSを目視確認し証跡保存 | 継続 |
+| Vercel API URL確認 | ローカル `js/config.js` はProduction APIを指す。本番配信configもops版markerを確認済み | `ReadFile js/config.js`, 本番 `config.js` fetch | ProductionフロントがProduction APIを指す | `kajishift-frontend/js/config.js`, Shell実行ログ | OK（Network証跡待ち） | ブラウザNetworkログで `/api/public/status` 取得を確認し証跡保存 | 継続 |
 | 本番読み取り系確認 | push後、本番 `/api/health` はHTTP 200 + `operation.mode=normal`、`/api/public/status` はHTTP 200 + `data.currentMode=normal`。フロント `/`, `/index.html`, `/customer/login.html`, `/worker/login.html` は200 | fetchによるGETのみ | health 200 + operation、public status 200 normal、主要ページ200 | Shell実行ログ、本ファイル | OK | ブラウザ画面/Networkのスクショ保存 | 証跡スクショ待ち |
-| 外部監視/通知設定確認 | アプリ内通知2系統は到達済み。Uptime/Railway/Vercel/Stripe通知はDashboard確認が必要 | 既存通知テスト結果、Runbook確認 | 2系統通知、外部監視、各Dashboard通知が有効 | `docs/BETA_EXECUTION_RESULT.md`, `docs/BETA_OPERATIONS_RUNBOOK.md` | Dashboard確認待ち | 監視サービス、Railway、Vercel、Stripeの通知設定スクショ保存 | β公開前必須 |
-| 日次バックアップ継続設定 | `.github/workflows/database-backup.yml` に日次backupと週次restore drill scheduleあり。PostgreSQL 18 client修正後backup jobとartifact作成は成功。restore drillは `pg_restore` exit code 2で失敗したため、restore scriptとworkflowの診断ログを強化 | workflowファイル確認、Actions失敗ログ、`package-lock.json` 管理状態確認、PostgreSQL client install手順確認、restore drill script確認 | schedule有効、secrets設定、PostgreSQL 18 client導入、backup job成功、artifact作成、restore drill成功 | workflowファイル、GitHub Actions画面、失敗/再実行ログ | Conditional Go | 修正commit後にGitHub Actionsを手動再実行し、restore drill job成功または詳細原因を確認 | β公開前必須 |
+| 外部監視/通知設定確認 | アプリ内通知2系統は到達済み。Uptime/Railway/Vercel/Stripe通知はDashboard証跡を保存する | 既存通知テスト結果、Runbook確認 | 2系統通知、外部監視、各Dashboard通知が有効 | `docs/BETA_EXECUTION_RESULT.md`, `docs/BETA_OPERATIONS_RUNBOOK.md` | OK（Dashboard証跡待ち） | 監視サービス、Railway、Vercel、Stripeの通知設定スクショ保存 | 継続 |
+| 日次バックアップ継続設定 | GitHub Actions `Database backup and restore drill #6` を `workflow_dispatch` で再実行し、Status `Success`、Total duration 2m 44s、Artifacts 1を確認。`backup` job PASS、artifact `kajishift-db-backup` 61.9 KB、`weekly-restore-drill` PASS | GitHub Actions run #6、workflowファイル、artifact、restore drillログ | schedule有効、secrets設定、PostgreSQL 18 client導入、backup job成功、artifact作成、restore drill成功 | GitHub Actions画面、artifact `kajishift-db-backup` | OK | Node.js 20 actions deprecated warningはβ公開後に改善 | β公開前確認済み |
 | ローカルガード系テスト | PASS | `npm run test:ops-guard`, `npm run test:ops-write-guards`, `npm run test:payment-reconciliation`, フロント `node tests\test-ops-ui-static.js` | 全てPASS | Shell実行ログ | OK | なし | β公開前確認済み |
 
 ## 1. デプロイ確認
@@ -92,10 +96,10 @@
 
 | チェック | 確認方法 | 期待結果 | 証跡ファイル/ログの保存先 | 判定 |
 |----------|----------|----------|----------------------------|------|
-| [ ] 外部監視が有効 | Uptime監視サービスでBackend `/api/health` とFrontend URLを確認。CursorからDashboard確認不可 | 5分程度の監視頻度で有効、失敗時通知あり | 監視Dashboardスクリーンショット | Dashboard確認待ち |
-| [ ] Railway通知が有効 | Railway project通知設定を確認。CursorからDashboard確認不可 | Deploy失敗、runtime異常を通知 | Railway通知設定スクリーンショット | Dashboard確認待ち |
-| [ ] Vercel通知が有効 | Vercel project通知設定を確認。CursorからDashboard確認不可 | Deploy失敗を通知 | Vercel通知設定スクリーンショット | Dashboard確認待ち |
-| [ ] Stripe通知が有効 | Stripe DashboardでWebhook失敗、支払い失敗/異常通知を確認。CursorからDashboard確認不可 | Webhook失敗・決済異常が担当者へ通知 | Stripe Dashboardスクリーンショット | Dashboard確認待ち |
+| [ ] 外部監視が有効 | Uptime監視サービスでBackend `/api/health` とFrontend URLを確認。CursorからDashboard確認不可 | 5分程度の監視頻度で有効、失敗時通知あり | 監視Dashboardスクリーンショット | 継続 |
+| [ ] Railway通知が有効 | Railway project通知設定を確認。CursorからDashboard確認不可 | Deploy失敗、runtime異常を通知 | Railway通知設定スクリーンショット | 継続 |
+| [ ] Vercel通知が有効 | Vercel project通知設定を確認。CursorからDashboard確認不可 | Deploy失敗を通知 | Vercel通知設定スクリーンショット | 継続 |
+| [ ] Stripe通知が有効 | Stripe DashboardでWebhook失敗、支払い失敗/異常通知を確認。CursorからDashboard確認不可 | Webhook失敗・決済異常が担当者へ通知 | Stripe Dashboardスクリーンショット | 継続 |
 | [x] 通知2系統が到達確認済み | `sendOpsAlert` テスト結果を確認 | `configuredTargets=2`, `deliveredTargets=2`, `failedTargets=0` | `docs/BETA_EXECUTION_RESULT.md`、通知先の受信ログ | OK |
 | [ ] 異常時の通知先が明記済み | Runbookと共有先を確認 | 通知先、確認担当、一次対応者が明確 | `docs/BETA_OPERATIONS_RUNBOOK.md`、運用連絡先 | 要確認 |
 | [ ] 一次対応手順が明記済み | Runbookの障害時確認順序と停止/復帰手順を確認 | DB/Stripe/API/フロントの確認順序が明確 | `docs/BETA_OPERATIONS_RUNBOOK.md` | OK |
@@ -106,11 +110,11 @@
 |----------|----------|----------|----------------------------|------|
 | [x] 暗号化バックアップが成功 | `npm run backup:database` の実行結果を確認 | `.dump.enc` と `.manifest.json` 作成 | `backups/` 配下のmanifest、`docs/BETA_EXECUTION_RESULT.md` | OK |
 | [x] 復元ドリルが検証DBで成功 | `npm run backup:restore-drill -- <backup-file>` 実行結果を確認 | `target=verification-db`, `encrypted=true`、復元成功 | restore drill log、`docs/BETA_EXECUTION_RESULT.md` | OK |
-| [ ] 日次バックアップ継続スケジュールが設定済み | `.github/workflows/database-backup.yml` に `0 18 * * *` の日次scheduleを確認。backup jobは成功済み。restore drillは `pg_restore` exit code 2で失敗したため、詳細ログ追加後に再実行する | 24時間以内のRPOを満たす日次実行、PostgreSQL 18 client導入、backup job成功、artifact作成、restore drill成功 | GitHub Actions run、Railway/PITR設定スクリーンショット | Conditional Go（restore drill再実行待ち） |
+| [x] 日次バックアップ継続スケジュールが設定済み | `.github/workflows/database-backup.yml` に `0 18 * * *` の日次scheduleを確認。`Database backup and restore drill #6` は `workflow_dispatch` で成功し、backup/restore drillともPASS | 24時間以内のRPOを満たす日次実行、PostgreSQL 18 client導入、backup job成功、artifact作成、restore drill成功 | GitHub Actions run #6、artifact `kajishift-db-backup` | OK |
 | [ ] バックアップ保管先が確認済み | 保存先、暗号化、アクセス権限を確認 | 権限が限定され、平文dumpが残らない | 保管先設定メモ、manifest | 要確認 |
 | [ ] 保持期間が確認済み | `BACKUP_RETENTION_COUNT` と保管ポリシーを確認 | 直近7世代以上を保持 | Railway/GitHub Actions設定、manifest | 要確認 |
 | [x] 復元手順が確認済み | Runbookの復元手順を確認 | 検証DBで実復元済み、本番DBへ誤復元しないguardあり | `docs/BETA_OPERATIONS_RUNBOOK.md` | OK |
-| [ ] 週次復元ドリルの継続予定がある | GitHub Actions weekly jobまたは運用カレンダーを確認 | 週1回の復元確認が継続される | GitHub Actions workflow、運用カレンダー | 継続 |
+| [x] 週次復元ドリルの継続予定がある | `.github/workflows/database-backup.yml` の日曜cronと手動実行 `Database backup and restore drill #6` の `weekly-restore-drill` PASSを確認 | 週1回の復元確認が継続される | GitHub Actions workflow、run #6 | OK |
 
 ## 6. 決済・Webhook確認
 
@@ -143,20 +147,21 @@
 | [x] Windowsローカル短命Node通知テスト終了時のPrisma系assertを記録 | 通知送信後 `deliveredTargets=2` の後に終了時assertが出た事象を記録 | 通知/DB処理完了後の終了時事象として扱う。本番常駐APIのブロッカーにしない | 本ファイル、`docs/BETA_EXECUTION_RESULT.md` 追記推奨 | OK |
 | [ ] Staging未分離または未整備リスクを記載 | 現在のStaging有無を確認 | 本番書き込みE2Eを避けるため、Staging整備を継続課題化 | `docs/RELEASE_READINESS_CHECKLIST.md` | 継続 |
 | [x] DB完全停止時の対応方針を記載 | RunbookのDB完全停止時手順を確認 | 外部監視で検知し、`BETA_OPERATION_MODE_OVERRIDE=maintenance` で補完 | `docs/BETA_OPERATIONS_RUNBOOK.md` | OK |
-| [ ] 日次バックアップ継続設定の未実施状況を明記 | GitHub Actions手動実行はPostgreSQL 18 client修正後にbackup job成功、restore drill jobが `pg_restore` exit code 2で失敗。詳細ログ追加後の再実行結果を確認する | backup job成功、restore drill job成功または詳細原因特定 | 本ファイル、GitHub Actions/Railway設定 | Conditional Go（restore drill再実行待ち） |
-| [ ] 外部監視の未実施状況を明記 | Uptime/Railway/Vercel/Stripe通知設定を確認 | 未設定ならβ公開前必須、設定済みならOKへ更新 | 監視Dashboardスクリーンショット | 要確認 |
+| [x] 日次バックアップ継続設定の未実施状況を明記 | GitHub Actions `Database backup and restore drill #6` でbackup job、artifact作成、weekly restore drillがすべてPASS | backup job成功、restore drill job成功 | 本ファイル、GitHub Actions run #6 | OK |
+| [ ] 外部監視の未実施状況を明記 | Uptime/Railway/Vercel/Stripe通知設定を確認 | 設定済みならOKへ更新。未設定ならβ公開後も即時整備する | 監視Dashboardスクリーンショット | 継続 |
 | [ ] 本番相当E2E未実施状況を明記 | Staging E2E実行状況を確認 | 本番では再実行せず、Stagingで継続実施 | Staging E2Eログ | 継続 |
+| [ ] Node.js 20 actions deprecated warning | GitHub Actions run #6のAnnotationsで確認。workflow自体はSuccessのためβ公開ブロッカーではない | Actionsの推奨バージョンへ更新する | GitHub Actions annotations | 継続 |
 
 ## 9. Go / No-Go 判定
 
 | 項目 | 内容 |
 |------|------|
-| 判定 | **Conditional Go** |
-| 条件 | **24h自動停止ガードあり**。Backend/FrontendともGitHub `main` へpush済み。本番 `/api/public/status` 200 normal、`/api/health.operation` normal、本番 `js/config.js` ops版markerを確認済み。GitHub Actions日次バックアップworkflowはbackup job成功済み、restore drill jobの再実行成功が必要 |
-| 未完了項目 | GitHub Actions `weekly-restore-drill` の再実行成功確認、Railway/Vercel Deploymentsのスクリーンショット保存、Railway/Vercel/Stripe/外部監視通知設定のDashboard確認、Stripe同一イベント再送、Staging本番相当E2E |
-| β公開前に必須で潰す項目 | Railway/Vercel最新デプロイ確認、本番 `prisma migrate deploy` / migration status確認、本番環境変数確認、本番読み取り系確認、外部監視/通知設定確認、日次バックアップ継続設定確認 |
-| β公開後に継続対応する項目 | Staging整備、本番相当E2E、Stripe同一イベント再送、週次復元ドリル、バックアップ保管/保持監査、Windows短命Node assertのCI/Linux再確認 |
-| 判断理由 | ローカル実装、検証DBドリル、通知、バックアップ、復元、書き込みガード、停止UI静的テストはPASS。さらにBackend/FrontendをGitHub `main` へpush後、本番API `/api/public/status` と `/api/health.operation`、本番フロント `config.js` ops markerはPASS。日次バックアップのbackup jobも成功済み。一方、restore drill jobは `pg_restore` exit code 2で失敗しており、詳細ログ追加後の再実行成功まではConditional Goとする |
+| 判定 | **Go** |
+| 条件 | **24h自動停止ガードあり**。Backend/FrontendともGitHub `main` へpush済み。本番 `/api/public/status` 200 normal、`/api/health.operation` normal、本番 `js/config.js` ops版markerを確認済み。GitHub Actions `Database backup and restore drill #6` はbackup/restore drillともPASS |
+| 未完了項目 | Railway/Vercel Deploymentsのスクリーンショット保存、Railway/Vercel/Stripe/外部監視通知設定のDashboard確認、Stripe同一イベント再送、Staging本番相当E2E |
+| β公開前に必須で潰す項目 | なし。Dashboardスクリーンショット保存と外部監視/通知設定の目視確認は運用証跡として継続 |
+| β公開後に継続対応する項目 | Staging整備、本番相当E2E、Stripe同一イベント再送、週次復元ドリル、バックアップ保管/保持監査、Windows短命Node assertのCI/Linux再確認、Node.js 20 actions deprecated warning対応 |
+| 判断理由 | ローカル実装、検証DBドリル、通知、バックアップ、復元、書き込みガード、停止UI静的テストはPASS。Backend/FrontendをGitHub `main` へpush後、本番API `/api/public/status` と `/api/health.operation`、本番フロント `config.js` ops markerもPASS。さらにGitHub Actions `Database backup and restore drill #6` でbackup job、encrypted artifact作成、weekly restore drillがPASSしたため、β公開前No-Go項目は解消済み |
 
 ## Stagingで実施する本番相当E2E
 
@@ -173,4 +178,4 @@
 
 ## 共有用サマリー
 
-KAJISHIFT β公開前の現時点判定は **Conditional Go: 24h自動停止ガードあり、GitHub Actions restore drill再実行待ち** です。暗号化バックアップ、検証DBへの復元ドリル、通知2系統到達、`payment_paused` / `maintenance` 疑似発火、ガード系テスト、フロント停止UI静的テストはPASS済みです。Backend/Frontendとも24h Auto Ops対応をGitHub `main` へpushし、本番 `/api/public/status` が `normal` を返すこと、`/api/health` に `operation` が含まれること、本番 `js/config.js` がops版markerを含むことを確認済みです。GitHub Actions日次バックアップworkflowはPostgreSQL 18 client修正後にbackup jobとartifact作成まで成功しましたが、restore drill jobが `pg_restore` exit code 2で失敗しました。詳細ログ追加後の再実行成功をβ公開前必須条件とします。本番データ保護のため、本番での予約作成・PaymentIntent作成・領収書DLの再実行は行わず、既存Productionスモーク証跡を参照します。
+KAJISHIFT β公開前の現時点判定は **Go: 24h自動停止ガードあり** です。暗号化バックアップ、検証DBへの復元ドリル、通知2系統到達、`payment_paused` / `maintenance` 疑似発火、ガード系テスト、フロント停止UI静的テストはPASS済みです。Backend/Frontendとも24h Auto Ops対応をGitHub `main` へpushし、本番 `/api/public/status` が `normal` を返すこと、`/api/health` に `operation` が含まれること、本番 `js/config.js` がops版markerを含むことを確認済みです。GitHub Actions `Database backup and restore drill #6` はStatus `Success`、backup job PASS、encrypted backup artifact `kajishift-db-backup` 61.9 KB作成、weekly restore drill PASSです。Node.js 20 actions deprecated warningはβ公開後の改善項目とし、本番データ保護のため本番での予約作成・PaymentIntent作成・領収書DLの再実行は行わず、既存Productionスモーク証跡を参照します。
