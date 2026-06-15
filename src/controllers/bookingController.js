@@ -64,6 +64,26 @@ const getBookingById = async (req, res, next) => {
 };
 
 /**
+ * 予約条件に合う利用可能ワーカー候補を取得
+ * GET /api/bookings/:id/available-workers
+ */
+const getAvailableWorkersForBooking = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const result = await bookingService.getAvailableWorkersForBooking(id, userId, userRole);
+
+    res.json({
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * 予約を作成
  * POST /api/bookings
  */
@@ -198,6 +218,7 @@ const completeBooking = async (req, res, next) => {
 module.exports = {
   getBookings,
   getBookingById,
+  getAvailableWorkersForBooking,
   createBooking,
   updateBooking,
   cancelBooking,

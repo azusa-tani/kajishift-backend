@@ -119,6 +119,33 @@ router.post('/', requireOperation('createBooking'), bookingController.createBook
 
 /**
  * @swagger
+ * /bookings/{id}/available-workers:
+ *   get:
+ *     summary: 予約条件に合う利用可能ワーカー候補を取得
+ *     tags: [予約]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: 利用可能ワーカー候補取得成功
+ *       401:
+ *         description: 認証エラー
+ *       403:
+ *         description: 予約にアクセスする権限がありません
+ *       404:
+ *         description: 予約が見つかりません
+ */
+router.get('/:id/available-workers', bookingController.getAvailableWorkersForBooking);
+
+/**
+ * @swagger
  * /bookings/{id}:
  *   get:
  *     summary: 予約詳細取得

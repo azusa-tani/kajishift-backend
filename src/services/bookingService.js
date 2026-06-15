@@ -6,12 +6,21 @@ const prisma = require('../config/database');
 const notificationService = require('./notificationService');
 const emailService = require('./emailService');
 const uploadService = require('./uploadService');
+const {
+  jstSlotToUtcRangeMs,
+  bookingToUtcRangeMs,
+  intervalsOverlap,
+} = require('../utils/jstSlot');
 
 const createHttpError = (message, status) => {
   const error = new Error(message);
   error.status = status;
   return error;
 };
+
+const BLOCKING_BOOKING_STATUSES = ['CONFIRMED', 'IN_PROGRESS'];
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 /** 予約レスポンスの worker に付けるプロフィール画像（File テーブル PROFILE_IMAGE の最新1件） */
 const WORKER_PROFILE_FILES = {
@@ -74,6 +83,246 @@ const parseDateFilterUtc = (value, endOfDay) => {
   }
   const dt = new Date(str);
   return Number.isNaN(dt.getTime()) ? null : dt;
+};
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+const getJstDateParts = (ms) => {
+  const d = new Date(ms + JST_OFFSET_MS);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    dayKey: DAY_KEYS[d.getUTCDay()],
+    minutes: d.getUTCHours() * 60 + d.getUTCMinutes(),
+  };
+};
+
+const formatJstYmdFromMs = (ms) => {
+  const p = getJstDateParts(ms);
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)}`;
+};
+
+const addDaysYmd = (ymd, days) => {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days, 0, 0, 0, 0));
+  return `${dt.getUTCFullYear()}-${pad2(dt.getUTCMonth() + 1)}-${pad2(dt.getUTCDate())}`;
+};
+
+const enumerateJstYmdRange = (startYmd, endYmd) => {
+  const out = [];
+  for (let cur = startYmd; cur <= endYmd; cur = addDaysYmd(cur, 1)) {
+    out.push(cur);
+  }
+  return out;
+};
+
+const getBookingRange = (booking) => {
+  const range = bookingToUtcRangeMs(booking);
+  if (!range) {
+    throw createHttpError('予約日時または利用時間が不正です', 400);
+  }
+  const startJst = getJstDateParts(range.startMs);
+  const endJst = getJstDateParts(range.endMs);
+  return {
+    ...range,
+    startYmd: formatJstYmdFromMs(range.startMs),
+    // 終了ぴったりのスロットを含めないよう、暦日判定は 1ms 手前を見る
+    endYmd: formatJstYmdFromMs(Math.max(range.startMs, range.endMs - 1)),
+    startDayKey: startJst.dayKey,
+    startMinutes: startJst.minutes,
+    endMinutes: endJst.minutes,
+  };
+};
+
+const parseJsonProfileField = (raw) => {
+  const s = raw == null ? '' : String(raw).trim();
+  if (!s || !s.startsWith('{')) return null;
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
+};
+
+const timeToMinutes = (value) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(value || '').trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 24 || min < 0 || min > 59 || (h === 24 && min !== 0)) return null;
+  return h * 60 + min;
+};
+
+const isWithinAvailabilityText = (availabilityText, bookingRange) => {
+  const parsed = parseJsonProfileField(availabilityText);
+  if (!parsed || parsed.v !== 1 || !Array.isArray(parsed.days)) return true;
+  if (bookingRange.startYmd !== bookingRange.endYmd) return true;
+
+  const day = parsed.days.find((d) => d && d.key === bookingRange.startDayKey);
+  if (!day) return true;
+  if (day.closed === true) return false;
+
+  const start = timeToMinutes(day.start);
+  const end = timeToMinutes(day.end);
+  if (start == null || end == null || end <= start) return true;
+
+  return bookingRange.startMinutes >= start && bookingRange.endMinutes <= end;
+};
+
+const normalizeText = (value) =>
+  String(value || '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+
+const isWithinServiceAreaText = (serviceAreaText, address) => {
+  const addr = normalizeText(address);
+  if (!addr) return true;
+
+  const parsed = parseJsonProfileField(serviceAreaText);
+  if (!parsed || parsed.v !== 1 || !Array.isArray(parsed.rows) || parsed.rows.length === 0) {
+    return true;
+  }
+
+  const rows = parsed.rows
+    .map((r) => ({
+      city: normalizeText(r && r.city),
+      ward: normalizeText(r && r.ward),
+    }))
+    .filter((r) => r.city || r.ward);
+  if (rows.length === 0) return true;
+
+  if (rows.some((r) => (r.city && addr.includes(r.city)) || (r.ward && addr.includes(r.ward)))) {
+    return true;
+  }
+
+  const cityInAddress = addr.match(/[^,、。]*?市/);
+  if (cityInAddress) {
+    const city = cityInAddress[0];
+    return rows.some((r) => r.city && city.includes(r.city));
+  }
+
+  return true;
+};
+
+const findOverlappingBookings = async (workerIds, bookingRange, excludeBookingId = null) => {
+  if (!workerIds.length) return new Set();
+
+  const rows = await prisma.booking.findMany({
+    where: {
+      workerId: { in: workerIds },
+      status: { in: BLOCKING_BOOKING_STATUSES },
+      ...(excludeBookingId ? { id: { not: excludeBookingId } } : {}),
+      scheduledDate: {
+        gte: new Date(bookingRange.startMs - 48 * 60 * 60 * 1000),
+        lte: new Date(bookingRange.endMs + 48 * 60 * 60 * 1000),
+      },
+    },
+    select: {
+      id: true,
+      workerId: true,
+      scheduledDate: true,
+      duration: true,
+      startTime: true,
+      status: true,
+    },
+  });
+
+  const blocked = new Set();
+  rows.forEach((booking) => {
+    const other = bookingToUtcRangeMs(booking);
+    if (other && intervalsOverlap(bookingRange.startMs, bookingRange.endMs, other.startMs, other.endMs)) {
+      blocked.add(booking.workerId);
+    }
+  });
+  return blocked;
+};
+
+const findUnavailableSlotOverlaps = async (workerIds, bookingRange) => {
+  if (!workerIds.length) return new Set();
+
+  const dates = enumerateJstYmdRange(bookingRange.startYmd, bookingRange.endYmd);
+  const rows = await prisma.workerUnavailableSlot.findMany({
+    where: {
+      workerId: { in: workerIds },
+      localDate: { in: dates },
+    },
+    select: {
+      workerId: true,
+      localDate: true,
+      slotIndex: true,
+    },
+  });
+
+  const blocked = new Set();
+  rows.forEach((slot) => {
+    const slotRange = jstSlotToUtcRangeMs(slot.localDate, slot.slotIndex);
+    if (intervalsOverlap(bookingRange.startMs, bookingRange.endMs, slotRange.startMs, slotRange.endMs)) {
+      blocked.add(slot.workerId);
+    }
+  });
+  return blocked;
+};
+
+const selectAvailableWorkerFields = {
+  id: true,
+  name: true,
+  bio: true,
+  hourlyRate: true,
+  serviceAreaText: true,
+  availabilityText: true,
+  rating: true,
+  reviewCount: true,
+  approvalStatus: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+const assertWorkerAssignableToBooking = async (booking, workerId, worker = null) => {
+  const targetWorker =
+    worker ||
+    (await prisma.user.findUnique({
+      where: { id: workerId },
+      select: {
+        id: true,
+        role: true,
+        status: true,
+        approvalStatus: true,
+        serviceAreaText: true,
+        availabilityText: true,
+      },
+    }));
+
+  if (!targetWorker) {
+    throw new Error('指定されたワーカーが見つかりません');
+  }
+  if (targetWorker.role !== 'WORKER') {
+    throw new Error('指定されたユーザーはワーカーではありません');
+  }
+  if (targetWorker.status !== 'ACTIVE') {
+    throw new Error('指定されたワーカーは利用できません');
+  }
+  if (targetWorker.approvalStatus !== 'APPROVED') {
+    throw new Error('指定されたワーカーはまだ承認されていません');
+  }
+
+  const bookingRange = getBookingRange(booking);
+  if (!isWithinAvailabilityText(targetWorker.availabilityText, bookingRange)) {
+    throw createHttpError('選択したワーカーはこの時間帯に対応できません。別のワーカーを選択してください。', 409);
+  }
+  if (!isWithinServiceAreaText(targetWorker.serviceAreaText, booking.address)) {
+    throw createHttpError('選択したワーカーはこのエリアに対応できません。別のワーカーを選択してください。', 409);
+  }
+
+  const [bookingOverlaps, unavailableOverlaps] = await Promise.all([
+    findOverlappingBookings([workerId], bookingRange, booking.id || null),
+    findUnavailableSlotOverlaps([workerId], bookingRange),
+  ]);
+  if (bookingOverlaps.has(workerId) || unavailableOverlaps.has(workerId)) {
+    throw createHttpError('選択したワーカーはこの時間帯に対応できなくなりました。別のワーカーを選択してください。', 409);
+  }
+
+  return true;
 };
 
 /**
@@ -284,6 +533,55 @@ const getBookingById = async (bookingId, userId, userRole) => {
 };
 
 /**
+ * 予約条件に合う利用可能ワーカー候補を取得
+ * @param {string} bookingId
+ * @param {string} userId
+ * @param {string} userRole
+ */
+const getAvailableWorkersForBooking = async (bookingId, userId, userRole) => {
+  const booking = await getBookingById(bookingId, userId, userRole);
+  const bookingRange = getBookingRange(booking);
+
+  const candidates = await prisma.user.findMany({
+    where: {
+      role: 'WORKER',
+      status: 'ACTIVE',
+      approvalStatus: 'APPROVED',
+    },
+    select: selectAvailableWorkerFields,
+    orderBy: [
+      { rating: 'desc' },
+      { reviewCount: 'desc' },
+    ],
+    take: 100,
+  });
+
+  const workerIds = candidates.map((worker) => worker.id);
+  const [bookingOverlaps, unavailableOverlaps] = await Promise.all([
+    findOverlappingBookings(workerIds, bookingRange, booking.id),
+    findUnavailableSlotOverlaps(workerIds, bookingRange),
+  ]);
+
+  const workers = candidates
+    .filter((worker) => !bookingOverlaps.has(worker.id))
+    .filter((worker) => !unavailableOverlaps.has(worker.id))
+    .filter((worker) => isWithinAvailabilityText(worker.availabilityText, bookingRange))
+    .filter((worker) => isWithinServiceAreaText(worker.serviceAreaText, booking.address))
+    .map(({ availabilityText, ...worker }) => worker);
+
+  return {
+    bookingId: booking.id,
+    workers,
+    pagination: {
+      page: 1,
+      limit: workers.length,
+      total: workers.length,
+      totalPages: workers.length > 0 ? 1 : 0,
+    },
+  };
+};
+
+/**
  * 予約を作成
  * @param {string} customerId - 顧客ID
  * @param {object} bookingData - 予約データ
@@ -312,28 +610,20 @@ const createBooking = async (customerId, bookingData) => {
     throw new Error('時間数は1時間以上24時間以下である必要があります');
   }
 
-  // ワーカーが指定されている場合、ワーカーの存在確認
+  // ワーカーが指定されている場合、ワーカーの存在・空き状況を確認
   if (workerId) {
-    const worker = await prisma.user.findUnique({
-      where: { id: workerId },
-      select: { id: true, role: true, status: true, approvalStatus: true }
-    });
-
-    if (!worker) {
-      throw new Error('指定されたワーカーが見つかりません');
-    }
-
-    if (worker.role !== 'WORKER') {
-      throw new Error('指定されたユーザーはワーカーではありません');
-    }
-
-    if (worker.status !== 'ACTIVE') {
-      throw new Error('指定されたワーカーは利用できません');
-    }
-
-    if (worker.approvalStatus !== 'APPROVED') {
-      throw new Error('指定されたワーカーはまだ承認されていません');
-    }
+    await assertWorkerAssignableToBooking(
+      {
+        customerId,
+        workerId,
+        serviceType,
+        scheduledDate: scheduledDateTime,
+        startTime,
+        duration,
+        address,
+      },
+      workerId
+    );
   }
 
   // 予約を作成
@@ -484,28 +774,14 @@ const updateBooking = async (bookingId, userId, userRole, updateData) => {
   // ワーカーの変更（顧客のみ可能）
   if (workerId !== undefined && userRole === 'CUSTOMER') {
     if (workerId) {
-      const worker = await prisma.user.findUnique({
-        where: { id: workerId },
-        select: { id: true, role: true, status: true, approvalStatus: true }
-      });
-
-      if (!worker) {
-        throw new Error('指定されたワーカーが見つかりません');
-      }
-
-      if (worker.role !== 'WORKER') {
-        throw new Error('指定されたユーザーはワーカーではありません');
-      }
-
-      if (worker.status !== 'ACTIVE') {
-        throw new Error('指定されたワーカーは利用できません');
-      }
-
-      // 承認チェック: 予約作成時は厳格、更新時は緩和（テスト用にも対応）
-      // ただし、本番環境では承認済みワーカーのみ使用すべき
-      if (worker.approvalStatus !== 'APPROVED' && process.env.NODE_ENV === 'production') {
-        throw new Error('指定されたワーカーはまだ承認されていません');
-      }
+      await assertWorkerAssignableToBooking(
+        {
+          ...booking,
+          ...updateFields,
+          workerId,
+        },
+        workerId
+      );
     }
     updateFields.workerId = workerId || null;
     // ワーカーが設定された場合、ステータスをCONFIRMEDに変更（既にCOMPLETEDの場合は変更しない）
@@ -1022,6 +1298,7 @@ const completeBooking = async (bookingId, userId) => {
 module.exports = {
   getBookings,
   getBookingById,
+  getAvailableWorkersForBooking,
   createBooking,
   updateBooking,
   cancelBooking,
@@ -1031,4 +1308,10 @@ module.exports = {
   /** 決済 API 等で booking.worker に profileImageUrl を付与する際に利用 */
   serializeBooking,
   WORKER_PROFILE_FILES,
+  // テスト用の純粋関数
+  _availabilityHelpers: {
+    getBookingRange,
+    isWithinAvailabilityText,
+    isWithinServiceAreaText,
+  },
 };
