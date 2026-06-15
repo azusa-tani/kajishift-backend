@@ -152,6 +152,34 @@ JSON.parse(localStorage.getItem('user'))
 | 結果 | OK |
 | メモ | `select-worker?id=<bookingId>` でワーカー選択画面が表示され、`E2E 対応可能ワーカー` が候補に表示、`E2E 予約重複ワーカー` は非表示。Available Worker選択後、`予約が確定しました！` のアラート表示を確認。予約詳細画面で `予約確定` 表示、DevToolsで `localStorage.token` / `localStorage.user`、`available-workers` 呼び出し、APIレスポンスの `status: "CONFIRMED"` をスクリーンショットで確認。 |
 
+## clean URL代表導線クリック確認結果
+
+| 項目 | 記録 |
+|------|------|
+| 実施日 | 2026-06-15 |
+| 確認者 | ユーザー（ローカルブラウザ手動確認） |
+| Backend URL | `http://localhost:3000/api` |
+| Frontend URL | `http://localhost:5500` |
+| ブラウザ | Google Chrome |
+| 使用した主なbookingId | `6679f5c8-ba82-4338-9bd9-982bc04ed948`, `d27303a7-6aa5-49f4-b70a-22c7fd6596c5`, `55defe4d-adc4-4c7a-aebd-5c99ac37600b`, `56fcba96-deb4-4681-9b13-c19536c48b0f` |
+| 確認結果 | OK（一部補足確認あり） |
+| NG詳細 | clean URLのクエリ欠落によるNGはなし |
+| 未確認項目 | `admin/support?id=...` の実クリック確認、`admin/worker-test-submissions?status=...` のURL欄でのstatusクエリ保持は未確認 |
+
+| 確認対象 | URL形式 | 結果 | メモ |
+|----------|----------|------|------|
+| customer 予約一覧 → 予約詳細 | `booking-detail?id=<bookingId>` | OK | `customer/bookings` から予約詳細に遷移し、予約情報とAPIレスポンスが表示された。`?id=` は維持された。 |
+| customer 予約詳細 → 予約変更 | `booking?id=<bookingId>` | OK | 予約詳細から予約変更画面へ遷移し、既存予約情報が読み込まれた。 |
+| customer 予約詳細 → ワーカー選択 | `select-worker?id=<bookingId>` | OK | 未確定予約でワーカー選択画面へ遷移し、予約ID不足エラーは出なかった。 |
+| customer 通知 → 予約詳細 | `booking-detail?id=<bookingId>` | OK | `customer/notifications` の予約関連通知から予約詳細に遷移し、予約情報とAPIレスポンスが表示された。 |
+| customer チャット導線 | `chat?bookingId=<bookingId>` | OK | URL欄への直接入力で同じチャット画面が表示され、メッセージ取得が確認できた。通常導線の `chat?booking=<bookingId>` も表示確認済み。 |
+| worker 通知 → 仕事詳細 | `job-detail?id=<bookingId>` | OK | `worker/notifications` の「仕事詳細を見る」から仕事詳細に遷移し、`?id=` は維持された。 |
+| worker 仕事一覧 → 仕事詳細 | `job-detail?id=<bookingId>` | OK | `worker/jobs` から仕事詳細へ遷移した。別予約では権限により `403 Forbidden` が表示されたが、URLのクエリ欠落ではない。 |
+| admin ダッシュボード → ワーカー管理 | `workers?status=pending` | OK | `admin/dashboard` からワーカー管理へ遷移し、`?status=pending` は維持された。 |
+| admin ダッシュボード → ワーカーテスト審査 | `worker-test-submissions?status=needs_review,ai_reviewed,test_submitted` | OK（補足あり） | ワーカーテスト審査画面の表示と関連API取得は確認済み。URL欄ではstatusクエリなしの表示だったため、statusクエリ保持の厳密確認は未確認。 |
+| admin 予約詳細 | `booking-detail?id=<bookingId>` | OK | `admin/booking-detail?id=<bookingId>` で予約詳細が表示され、`?id=` は維持された。 |
+| admin サポート詳細 | `support?id=<id>` | 未確認 | 直接URLのHTTP 200は確認済みだが、実ブラウザのクリック確認は未実施。 |
+
 ## 手動確認チェックリスト
 
 - [x] Backendを現行コードで起動し直した
@@ -190,7 +218,7 @@ NGが発生した場合は、以下を埋めてください。
 
 ## 既知の注意点
 
-- Cursor環境では実ブラウザのクリック・入力操作ツールが使えないため、実画面操作確認は未実施。
+- Cursor環境では実ブラウザのクリック・入力操作ツールが使えないため、自動UI操作は未実施。実画面操作はユーザーのローカルブラウザ手動確認で実施済み。
 - API E2Eでは、予約作成、候補取得、Available Workerでの予約確定まで確認済み。
 - 既存予約が残っている場合、同じ日時ではAvailable Workerも候補から外れる可能性がある。
 - Available Workerが出ない場合は、`npm run seed:e2e-local` を再実行し、seedが表示した翌日以降の平日 `10:00` の条件で確認する。
