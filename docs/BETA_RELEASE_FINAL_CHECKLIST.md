@@ -44,14 +44,17 @@
 - `weekly-restore-drill` job はPASSし、検証DBへのrestore drill成功を確認。
 - AnnotationsにNode.js 20 actions deprecated warningが出ているが、workflow自体は成功しているためβ公開ブロッカーではなく、β公開後の改善項目とする。
 
-## 2026-06-15 予約時のワーカー空き状況連動 追記
+## 2026-06-15 予約時のワーカー空き状況連動 完了
 
-β向け最小実装として、予約作成後のワーカー選択画面で、予約条件に対して対応可能かつ空いているワーカーだけを候補表示する連動を追加済み。
+β向け最小実装として、予約作成後のワーカー選択画面で、予約条件に対して対応可能かつ空いているワーカーだけを候補表示する連動を追加済み。API E2E、手動ブラウザE2E、clean URL代表導線クリック確認まで完了しており、β判定上は完了扱いとする。詳細な確認結果は `docs/LOCAL_E2E_CHECK.md` を参照する。
 
 対象コミット:
 
 - Backend: `ad322c0 feat: filter available workers for bookings`
 - Frontend: `de76199 feat: show available workers during booking selection`
+- Frontend: `7cfdf83 fix: preserve query params in clean urls`
+- Backend docs: `4910c67 docs: record manual booking e2e result`
+- Backend docs: `b65022f docs: record clean url navigation check`
 
 追加API:
 
@@ -91,13 +94,18 @@
 - `GET http://localhost:3000/api/health`
 - `GET http://localhost:5500/customer/select-worker`
 - モックによる既存予約重複、非重複、`WorkerUnavailableSlot`、`updateBooking` `409` 確認
+- API E2E: OK。予約作成、`GET /api/bookings/:id/available-workers`、Available Worker表示、Busy Worker除外、予約確定まで確認済み。
+- 手動ブラウザE2E: OK。ローカルブラウザでAvailable Worker表示、Busy Worker非表示、予約確定アラート、予約詳細の `CONFIRMED` 表示を確認済み。
+- clean URL対策: OK。クエリ付き `.html?...` リンクをclean URLへ統一し、`.html?` 検索結果0件を確認済み。
+- clean URL代表導線クリック確認: OK。customer予約一覧/詳細/予約変更/ワーカー選択/通知/チャット、worker通知/仕事詳細、adminワーカー管理/予約詳細の主要導線でクエリ維持を確認済み。
 
 未実施・残課題:
 
-- 認証済みブラウザE2Eは、既知seedアカウントのログインが `401` だったため未実施。
 - 外部クライアントが `scheduledDate` に時刻を含めず、`startTime` だけに時刻を入れる場合は、現行契約とズレる可能性がある。
 - サービス対応可否は正規化モデルがないため、今回の最小実装では厳密なサービス別スキル判定はしていない。
 - `availabilityText` / `serviceAreaText` は読めるJSON v1のみ判定し、判定不能な自由記述は既存運用を壊さないため許容している。
+- `admin/support?id=...` の実クリック確認は未確認。
+- `admin/worker-test-submissions?status=...` のURL欄でのstatusクエリ保持は補足確認余地あり。ただし主要なcustomer / worker / admin導線は確認済み。
 
 | 対象 | 実確認結果 | 確認方法 | 期待結果 | 証跡ファイル/ログの保存先 | 判定 | 残課題 | 扱い |
 |------|------------|----------|----------|----------------------------|------|--------|------|
