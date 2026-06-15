@@ -1,6 +1,6 @@
 # KAJISHIFT β公開前 最終チェックリスト
 
-最終更新: 2026-06-05
+最終更新: 2026-06-15
 
 ## 前提判定
 
@@ -43,6 +43,61 @@
 - `backup` job はPASSし、encrypted backup artifact `kajishift-db-backup` を作成済み。artifact sizeは61.9 KB。
 - `weekly-restore-drill` job はPASSし、検証DBへのrestore drill成功を確認。
 - AnnotationsにNode.js 20 actions deprecated warningが出ているが、workflow自体は成功しているためβ公開ブロッカーではなく、β公開後の改善項目とする。
+
+## 2026-06-15 予約時のワーカー空き状況連動 追記
+
+β向け最小実装として、予約作成後のワーカー選択画面で、予約条件に対して対応可能かつ空いているワーカーだけを候補表示する連動を追加済み。
+
+対象コミット:
+
+- Backend: `ad322c0 feat: filter available workers for bookings`
+- Frontend: `de76199 feat: show available workers during booking selection`
+
+追加API:
+
+- `GET /api/bookings/:id/available-workers`
+
+候補除外条件:
+
+- 同時間帯に `CONFIRMED` / `IN_PROGRESS` の既存予約があるワーカー
+- 対象時間帯と `WorkerUnavailableSlot` が重なるワーカー
+- JSON v1形式の `availabilityText` で対象曜日・時間帯に対応不可と判定できるワーカー
+- JSON v1形式の `serviceAreaText` で予約住所の市区町村と明確に合わないワーカー
+
+時間帯判定:
+
+- 現行フロントでは `booking-form.js` が日付と `startTime` を結合して `scheduledDate` を作成している。
+- バックエンドの可用性判定は `scheduledDate` の絶対時刻 + `duration` を基準にする。
+- `startTime` は表示・互換用の扱い。
+- この扱いは既存の `src/utils/jstSlot.js` / `workerUnavailableSlotService` の設計と整合している。
+
+二重予約防止:
+
+- 候補表示時だけでなく、`updateBooking` などで `workerId` を設定する際にも最終可用性チェックを行う。
+- 対応不可、既存予約重複、利用不可スロット重複の場合は `409` を返す。
+
+フロントエンド挙動:
+
+- `select-worker.js` は予約IDがある場合、新APIを優先して候補ワーカーを取得する。
+- 既存カードUI、ラジオ選択、ソート、予約確定導線は流用。
+- 候補0件時のメッセージ表示あり。
+- `409` 時は選択解除、候補再取得、別ワーカー選択案内を行う。
+
+確認済み:
+
+- `node tests/test-booking-availability.js`
+- `npm run test:ops-write-guards`
+- `node --check` 対象JS
+- `GET http://localhost:3000/api/health`
+- `GET http://localhost:5500/customer/select-worker`
+- モックによる既存予約重複、非重複、`WorkerUnavailableSlot`、`updateBooking` `409` 確認
+
+未実施・残課題:
+
+- 認証済みブラウザE2Eは、既知seedアカウントのログインが `401` だったため未実施。
+- 外部クライアントが `scheduledDate` に時刻を含めず、`startTime` だけに時刻を入れる場合は、現行契約とズレる可能性がある。
+- サービス対応可否は正規化モデルがないため、今回の最小実装では厳密なサービス別スキル判定はしていない。
+- `availabilityText` / `serviceAreaText` は読めるJSON v1のみ判定し、判定不能な自由記述は既存運用を壊さないため許容している。
 
 | 対象 | 実確認結果 | 確認方法 | 期待結果 | 証跡ファイル/ログの保存先 | 判定 | 残課題 | 扱い |
 |------|------------|----------|----------|----------------------------|------|--------|------|
