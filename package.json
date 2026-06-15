@@ -25,6 +25,7 @@
     "prisma:reset": "prisma migrate reset",
     "db:setup": "npm run prisma:generate && npm run prisma:migrate",
     "seed": "node prisma/seed.js",
+    "seed:e2e-local": "node scripts/seed-e2e-local.js",
     "postinstall": "prisma generate",
     "build": "prisma generate"
   },
