@@ -123,6 +123,71 @@ JSON.parse(localStorage.getItem('user'))
 - 予約ステータスが `CONFIRMED` になる。
 - 通常操作で `409` などのエラーが表示されない。
 
+## 現時点のステータス
+
+| 項目 | 状態 | メモ |
+|------|------|------|
+| API E2E | 確認済み | 予約作成、候補取得、Available Workerでの予約確定まで確認済み |
+| 実ブラウザ手動E2E | 未実施 | Cursor環境では実ブラウザのクリック・入力操作ツールが使えないため、人間による手動確認待ち |
+| Playwright等の自動UI E2E | 未導入 | 今回は依存追加せず、手動確認手順のみ整備 |
+
+## 手動ブラウザ確認結果
+
+実施後に以下を更新してください。
+
+| 項目 | 記録 |
+|------|------|
+| 実施日 | 未実施 |
+| 確認者 | 未記入 |
+| Backend URL | `http://localhost:3000/api` |
+| Frontend URL | `http://localhost:5500` |
+| ブラウザ | 未記入 |
+| 使用したseed | `npm run seed:e2e-local` |
+| 使用アカウント | `e2e-customer@example.com` |
+| 日付 | 未記入 |
+| 時刻 | 未記入 |
+| 利用時間 | 未記入 |
+| 住所 | 未記入 |
+| 作成されたbookingId | 未記入 |
+| 結果 | 未実施 |
+| メモ | 未記入 |
+
+## 手動確認チェックリスト
+
+- [ ] Backendを現行コードで起動し直した
+- [ ] `npm run seed:e2e-local` を実行した
+- [ ] `http://localhost:3000/api/health` が正常
+- [ ] `http://localhost:5500/customer/login` が表示される
+- [ ] Customerでログインできる
+- [ ] `localStorage.token` が保存される
+- [ ] `localStorage.user` が保存される
+- [ ] 予約作成画面へ遷移できる
+- [ ] 推奨条件で予約作成できる
+- [ ] `customer/select-worker.html?id=<bookingId>` へ遷移する
+- [ ] `GET /api/bookings/:id/available-workers` が呼ばれる
+- [ ] Available Workerが候補に表示される
+- [ ] Busy Workerが候補に表示されない
+- [ ] Available Workerを選択できる
+- [ ] 予約確定できる
+- [ ] 確定後ステータスが `CONFIRMED` になる
+- [ ] 画面上の完了表示または遷移が既存フローどおり動く
+- [ ] `409` などの予期しないエラーが出ない
+
+## NG時の記録欄
+
+NGが発生した場合は、以下を埋めてください。
+
+| 項目 | 記録 |
+|------|------|
+| 発生画面 | 未記入 |
+| 発生操作 | 未記入 |
+| エラーメッセージ | 未記入 |
+| Networkの失敗API | 未記入 |
+| HTTPステータス | 未記入 |
+| 再現条件 | 未記入 |
+| スクリーンショット保存先またはメモ | 未記入 |
+| 次の対応案 | 未記入 |
+
 ## 既知の注意点
 
 - Cursor環境では実ブラウザのクリック・入力操作ツールが使えないため、実画面操作確認は未実施。
