@@ -128,7 +128,7 @@ JSON.parse(localStorage.getItem('user'))
 | 項目 | 状態 | メモ |
 |------|------|------|
 | API E2E | 確認済み | 予約作成、候補取得、Available Workerでの予約確定まで確認済み |
-| 実ブラウザ手動E2E | 未実施 | Cursor環境では実ブラウザのクリック・入力操作ツールが使えないため、人間による手動確認待ち |
+| 実ブラウザ手動E2E | 確認済み | 人間によるローカルブラウザ操作で、Available Worker表示、Busy Worker非表示、予約確定アラート表示を確認 |
 | Playwright等の自動UI E2E | 未導入 | 今回は依存追加せず、手動確認手順のみ整備 |
 
 ## 手動ブラウザ確認結果
@@ -137,41 +137,41 @@ JSON.parse(localStorage.getItem('user'))
 
 | 項目 | 記録 |
 |------|------|
-| 実施日 | 未実施 |
-| 確認者 | 未記入 |
+| 実施日 | 2026-06-15 |
+| 確認者 | ユーザー（ローカルブラウザ手動確認） |
 | Backend URL | `http://localhost:3000/api` |
 | Frontend URL | `http://localhost:5500` |
-| ブラウザ | 未記入 |
+| ブラウザ | Google Chrome |
 | 使用したseed | `npm run seed:e2e-local` |
 | 使用アカウント | `e2e-customer@example.com` |
-| 日付 | 未記入 |
-| 時刻 | 未記入 |
-| 利用時間 | 未記入 |
-| 住所 | 未記入 |
-| 作成されたbookingId | 未記入 |
-| 結果 | 未実施 |
-| メモ | 未記入 |
+| 日付 | 2026-06-19 |
+| 時刻 | 10:00 |
+| 利用時間 | 2 |
+| 住所 | `札幌市中央区南1条西1丁目1-1` |
+| 作成されたbookingId | `6679f5c8-ba82-4338-9bd9-982bc04ed946` |
+| 結果 | OK |
+| メモ | `select-worker?id=<bookingId>` でワーカー選択画面が表示され、`E2E 対応可能ワーカー` が候補に表示、`E2E 予約重複ワーカー` は非表示。Available Worker選択後、`予約が確定しました！` のアラート表示を確認。予約詳細画面で `予約確定` 表示、DevToolsで `localStorage.token` / `localStorage.user`、`available-workers` 呼び出し、APIレスポンスの `status: "CONFIRMED"` をスクリーンショットで確認。 |
 
 ## 手動確認チェックリスト
 
-- [ ] Backendを現行コードで起動し直した
-- [ ] `npm run seed:e2e-local` を実行した
-- [ ] `http://localhost:3000/api/health` が正常
-- [ ] `http://localhost:5500/customer/login` が表示される
-- [ ] Customerでログインできる
-- [ ] `localStorage.token` が保存される
-- [ ] `localStorage.user` が保存される
-- [ ] 予約作成画面へ遷移できる
-- [ ] 推奨条件で予約作成できる
-- [ ] `customer/select-worker.html?id=<bookingId>` へ遷移する
-- [ ] `GET /api/bookings/:id/available-workers` が呼ばれる
-- [ ] Available Workerが候補に表示される
-- [ ] Busy Workerが候補に表示されない
-- [ ] Available Workerを選択できる
-- [ ] 予約確定できる
-- [ ] 確定後ステータスが `CONFIRMED` になる
-- [ ] 画面上の完了表示または遷移が既存フローどおり動く
-- [ ] `409` などの予期しないエラーが出ない
+- [x] Backendを現行コードで起動し直した
+- [x] `npm run seed:e2e-local` を実行した
+- [x] `http://localhost:3000/api/health` が正常
+- [x] `http://localhost:5500/customer/login` が表示される
+- [x] Customerでログインできる
+- [x] `localStorage.token` が保存される
+- [x] `localStorage.user` が保存される
+- [x] 予約作成画面へ遷移できる
+- [x] 推奨条件で予約作成できる
+- [x] `customer/select-worker?id=<bookingId>` へ遷移する
+- [x] `GET /api/bookings/:id/available-workers` が呼ばれる
+- [x] Available Workerが候補に表示される
+- [x] Busy Workerが候補に表示されない
+- [x] Available Workerを選択できる
+- [x] 予約確定できる
+- [x] 確定後ステータスが `CONFIRMED` になる
+- [x] 画面上の完了表示または遷移が既存フローどおり動く
+- [x] `409` などの予期しないエラーが出ない
 
 ## NG時の記録欄
 
