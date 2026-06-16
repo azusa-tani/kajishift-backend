@@ -66,9 +66,8 @@ const changePassword = async (req, res, next) => {
 const getUserById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const user = await userService.getUserById(id);
+    const user = await userService.getUserByIdForRequester(id, req.user);
 
-    // パスワードなどの機密情報を除外した情報のみ返す
     res.json({
       data: user
     });

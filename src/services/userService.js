@@ -6,6 +6,46 @@ const prisma = require('../config/database');
 const bcrypt = require('bcrypt');
 const { validateEmail, validatePassword } = require('../utils/validators');
 
+const httpError = (message, status = 400) => {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+};
+
+const BANK_ACCOUNT_FIELDS = [
+  'bankName',
+  'branchName',
+  'accountType',
+  'accountNumber',
+  'accountName',
+  'accountHolder'
+];
+
+const normalizeUserResponse = (user) => {
+  if (!user) return user;
+  const { password, ...safeUser } = user;
+  let notificationPrefs = safeUser.notificationPrefs;
+  if (notificationPrefs != null) {
+    try {
+      notificationPrefs = normalizeNotificationPrefs(notificationPrefs);
+    } catch {
+      notificationPrefs = normalizeNotificationPrefs(null);
+    }
+  } else {
+    notificationPrefs = normalizeNotificationPrefs(null);
+  }
+  return { ...safeUser, notificationPrefs };
+};
+
+const withoutBankAccountFields = (user) => {
+  if (!user) return user;
+  const safeUser = { ...user };
+  for (const field of BANK_ACCOUNT_FIELDS) {
+    delete safeUser[field];
+  }
+  return safeUser;
+};
+
 /**
  * 通知プリファレンス（JSON v1）を正規化
  * @param {unknown} raw
@@ -73,18 +113,25 @@ const getUserById = async (userId) => {
     throw new Error('ユーザーが見つかりません');
   }
 
-  let notificationPrefs = user.notificationPrefs;
-  if (notificationPrefs != null) {
-    try {
-      notificationPrefs = normalizeNotificationPrefs(notificationPrefs);
-    } catch {
-      notificationPrefs = normalizeNotificationPrefs(null);
-    }
-  } else {
-    notificationPrefs = normalizeNotificationPrefs(null);
+  return normalizeUserResponse(user);
+};
+
+/**
+ * リクエストユーザーの権限に応じてユーザー詳細を取得
+ */
+const getUserByIdForRequester = async (targetUserId, requester) => {
+  if (!requester || !requester.id || !requester.role) {
+    throw httpError('ユーザー情報を取得する権限がありません', 403);
   }
 
-  return { ...user, notificationPrefs };
+  const isSelf = requester.id === targetUserId;
+  const isAdmin = requester.role === 'ADMIN';
+  if (!isSelf && !isAdmin) {
+    throw httpError('他のユーザー情報を取得する権限がありません', 403);
+  }
+
+  const user = await getUserById(targetUserId);
+  return isSelf ? user : withoutBankAccountFields(user);
 };
 
 /**
@@ -184,6 +231,7 @@ const changePassword = async (userId, payload) => {
 
 module.exports = {
   getUserById,
+  getUserByIdForRequester,
   updateMe,
   changePassword
 };

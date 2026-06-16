@@ -790,8 +790,13 @@ const updateBooking = async (bookingId, userId, userRole, updateData) => {
     }
   }
 
-  // ステータスの更新（顧客またはワーカーが可能）
+  // 汎用更新での status 直接変更は admin のみに限定する。
+  // customer/worker は accept/reject/complete/cancel などの専用APIを使う。
   if (status !== undefined) {
+    if (userRole !== 'ADMIN') {
+      throw createHttpError('予約ステータスの変更は専用APIを使用してください', 403);
+    }
+
     const validStatuses = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
     if (!validStatuses.includes(status)) {
       throw new Error('無効なステータスです');
