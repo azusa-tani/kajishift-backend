@@ -34,7 +34,7 @@ const getMessages = async (req, res, next) => {
  */
 const sendMessage = async (req, res, next) => {
   try {
-    const { bookingId, content } = req.body;
+    const { bookingId, content, fileType } = req.body;
     const senderId = req.user.id;
 
     if (!bookingId) {
@@ -44,7 +44,7 @@ const sendMessage = async (req, res, next) => {
       });
     }
 
-    const message = await messageService.sendMessage(bookingId, senderId, content);
+    const message = await messageService.sendMessage(bookingId, senderId, { content, fileType });
 
     res.status(201).json({
       message: 'メッセージを送信しました',
