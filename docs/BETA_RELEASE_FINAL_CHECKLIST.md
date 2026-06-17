@@ -1,6 +1,6 @@
 # KAJISHIFT β公開前 最終チェックリスト
 
-最終更新: 2026-06-15
+最終更新: 2026-06-17
 
 ## 前提判定
 
@@ -106,6 +106,44 @@
 - `availabilityText` / `serviceAreaText` は読めるJSON v1のみ判定し、判定不能な自由記述は既存運用を壊さないため許容している。
 - `admin/support?id=...` の実クリック確認は未確認。
 - `admin/worker-test-submissions?status=...` のURL欄でのstatusクエリ保持は補足確認余地あり。ただし主要なcustomer / worker / admin導線は確認済み。
+
+## 2026-06-17 β向けUI誤認防止・未連携表示整理
+
+βで実ユーザーまたは運用者が触る可能性がある画面について、未送信入力欄、固定サンプル、未実装ボタン、未連携の保存UIが実データ・実処理として誤認されないように整理済み。これは本格実装完了ではなく、β運用で誤認を避けるための最小安全対策として扱う。
+
+対象コミット:
+
+- Frontend: `7bb0649 fix: remove unused card fields from customer registration`
+- Frontend: `f83cebc fix: hide sample worker reward account details`
+- Frontend: `bcc8d4e fix: remove admin report dependency from worker dashboard`
+- Frontend: `f16da09 fix: hide unavailable line login buttons`
+- Frontend: `56a133b fix: remove static admin support incident data`
+- Frontend: `aaecb6c fix: clarify admin dashboard chart placeholders`
+- Frontend: `0fe8f7d fix: clarify unavailable admin settings`
+
+完了扱い:
+
+- `customer/register.html`: 会員登録時に送信・保存されないカード番号/CVV/有効期限等の入力欄を削除済み。カード登録は予約時または支払い設定で行う案内へ変更済み。
+- `worker/rewards.html`: 固定口座、固定報酬、固定精算履歴、workerで利用できない `api.getPayments()` 呼び出しを削除済み。完了した仕事一覧は実API由来として残し、金額表示は外している。
+- `worker/dashboard.html`: admin専用 `getAdminWorkerReport` 依存と固定報酬/固定実績表示を削除済み。当月完了件数のみworker向け予約API由来として表示。
+- LINEログイン: `customer/login.html` / `worker/login.html` の未実装LINEログインボタンと `alert('実装予定')` を削除済み。通常メール/パスワードログインは維持。
+- `admin/support.html`: 固定問い合わせ、固定事故履歴、固定ステータスを削除済み。問い合わせ一覧、詳細、ステータス更新、アサイン、削除、CSV出力は実API連携済みとして維持。
+- `admin/dashboard.html`: KPIカードは既存レポートAPI由来として維持。日別売上推移グラフplaceholderはβ版では準備中である旨へ変更済み。
+- `admin/settings.html`: サービスメニュー/対応エリア管理は実API連携済みとして維持。未連携のメールテンプレート、プッシュ通知、問い合わせ連絡先フォーム、固定操作ログ、固定ページング、未連携CSVボタンは削除済み。
+
+準備中またはβ後対応:
+
+- 報酬/精算詳細、自動精算、振込状態、固定口座表示はβ版では準備中。必要に応じて運営から個別案内する。
+- 返金、キャンセル料、決済/売上/報酬精算の本格管理はβ版では外部管理または運用確認で代替し、画面上は準備中扱い。
+- 日別売上推移グラフ、メールテンプレート編集、プッシュ通知設定、問い合わせ連絡先編集、操作ログ検索/CSV出力は準備中。
+- LINEログインはβ版では未提供。通常ログイン導線で代替する。
+
+未確認・要証跡のまま残す項目:
+
+- Stripe Webhook署名検証のDashboard/ログ証跡、同一イベント再送確認。
+- Stripe Dashboard、Railway、Vercel、外部監視の通知設定スクリーンショット。
+- Stagingでの本番相当決済E2E、予約作成、PaymentIntent作成、Webhook、領収書DL。
+- 本番主要画面の実ブラウザE2E、Console/Network重大エラーなしの証跡。
 
 | 対象 | 実確認結果 | 確認方法 | 期待結果 | 証跡ファイル/ログの保存先 | 判定 | 残課題 | 扱い |
 |------|------------|----------|----------|----------------------------|------|--------|------|

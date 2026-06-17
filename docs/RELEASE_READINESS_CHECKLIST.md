@@ -1,6 +1,6 @@
 # KAJISHIFT リリース準備 専用チェックリスト
 
-最終更新: 2026-06-04
+最終更新: 2026-06-17
 
 ## 目的
 
@@ -59,6 +59,33 @@
 | 領収書DLなど止めない操作が継続できる |  |  |
 | スマホ表示で停止バナーが崩れない |  |  |
 | キャッシュにより古い稼働状態が残らない |  |  |
+| customer登録画面で未送信カード欄を表示しない | OK | Frontend `7bb0649`。カード登録は予約時または支払い設定で行う案内に変更 |
+| worker報酬/精算画面で固定口座・固定報酬を表示しない | OK | Frontend `f83cebc`。報酬/精算詳細は準備中、完了した仕事一覧は実API由来 |
+| worker dashboardでadmin API依存や固定報酬/固定実績を表示しない | OK | Frontend `bcc8d4e`。当月完了件数のみworker向けAPI由来 |
+| customer/workerログイン画面で未実装LINEログインを表示しない | OK | Frontend `f16da09`。通常ログインは維持 |
+| admin supportで固定問い合わせ・固定事故履歴を表示しない | OK | Frontend `56a133b`。実API連携済み問い合わせ管理は維持 |
+| admin dashboardのKPIと準備中グラフを区別できる | OK | Frontend `aaecb6c`。KPIは実API、日別売上推移グラフは準備中 |
+| admin settingsで未連携フォーム・固定操作ログを表示しない | OK | Frontend `0fe8f7d`。サービスメニュー/対応エリアは実API連携として維持 |
+
+## β版で準備中または公開後対応とする画面機能
+
+| 項目 | 判定 | 証跡 |
+|------|------|------|
+| 報酬/精算詳細、自動精算、振込状態表示 | β後対応 | 固定サンプルは削除済み。β中は運営から個別案内 |
+| 返金/キャンセル料/決済管理の本格画面 | β後対応 | `admin/payments.html` は誤認防止済み。外部管理またはCSV/Stripe Dashboardで代替 |
+| 日別売上推移グラフ | β後対応 | `admin/dashboard.html` で準備中表示済み |
+| メールテンプレート編集、プッシュ通知設定、問い合わせ連絡先編集 | β後対応 | `admin/settings.html` で未連携フォーム削除済み |
+| 操作ログ検索・CSV出力 | β後対応 | 固定操作ログ・未連携CSVボタン削除済み |
+| LINEログイン | β後対応 | 未実装ボタン削除済み。メール/パスワードログインで代替 |
+
+## 残る証跡取得タスク
+
+| 項目 | 判定 | 証跡 |
+|------|------|------|
+| 本番主要画面の実ブラウザ確認 | 要確認 | customer/worker/admin主要画面、Console/Network重大エラーなしのスクリーンショット |
+| Stripe Webhook署名検証と同一イベント再送 | 要確認 | Stripe Dashboard/CLI、Railwayログ、DB `stripe_events` |
+| Staging本番相当決済E2E | 継続 | 予約作成、PaymentIntent、決済成功、Webhook、領収書DL |
+| Railway/Vercel/Stripe/外部監視通知設定 | 要確認 | Dashboardスクリーンショット。値や秘密情報は記録しない |
 
 ## バックエンド チェックリスト
 

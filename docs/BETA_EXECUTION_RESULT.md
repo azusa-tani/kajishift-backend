@@ -1,6 +1,6 @@
 # KAJISHIFT β公開 実行結果
 
-最終更新: 2026-06-16
+最終更新: 2026-06-17
 
 ## 実行済み
 
@@ -46,6 +46,13 @@
 | 通知2系統到達 | PASS | `OPS_ALERT_WEBHOOK_URLS` 2件へ通知送信し `deliveredTargets=2`, `failedTargets=0` |
 | payment_paused疑似発火 | PASS | 検証DBで `payment_reconciliation_anomaly` から `auto:payment_anomaly_threshold`、`mode=payment_paused`、通知2系統到達 |
 | maintenance疑似発火 | PASS | 検証DBで `api_5xx_error` 10件から `auto:api_5xx_threshold`、`mode=maintenance`、通知2系統到達 |
+| customer登録カード欄誤認防止 | PASS | Frontend `7bb0649`。`customer/register.html` の未送信カード欄を削除し、カード登録は予約時または支払い設定で行う案内へ変更 |
+| worker報酬/精算表示誤認防止 | PASS | Frontend `f83cebc`。`worker/rewards.html` の固定口座/固定報酬/精算履歴とworker不可の `api.getPayments()` 呼び出しを削除。完了した仕事一覧のみ実API由来として残存 |
+| worker dashboard報酬表示整理 | PASS | Frontend `bcc8d4e`。admin専用レポートAPI依存と固定報酬/固定実績表示を削除。当月完了件数のみworker向けAPI由来 |
+| LINEログイン未提供表示整理 | PASS | Frontend `f16da09`。customer/workerログイン画面の未実装LINEログインボタンと `alert('実装予定')` を削除。通常ログインは維持 |
+| admin問い合わせ固定データ削除 | PASS | Frontend `56a133b`。`admin/support.html` の固定問い合わせ/固定事故履歴/固定ステータスを削除。問い合わせ一覧/詳細/更新/アサイン/削除/CSVは実API連携として維持 |
+| admin dashboardグラフplaceholder整理 | PASS | Frontend `aaecb6c`。KPIカードは実API連携、日別売上推移グラフは準備中と明記 |
+| admin settings未連携UI整理 | PASS | Frontend `0fe8f7d`。未連携メールテンプレート/プッシュ通知/問い合わせ連絡先フォーム、固定操作ログ、未連携CSVボタンを削除。サービスメニュー/対応エリア管理は実API連携として維持 |
 
 ## 残課題
 
@@ -59,6 +66,10 @@
 | 自動バックアップのスケジュール設定 | 運用確認 | ローカル暗号化バックアップと復元ドリルはPASS。日次実行はGitHub ActionsまたはRailway/PITRで継続設定する |
 | Stripe Dashboard同一イベント再送 | 条件付き | 実Webhook処理証跡は `processed`。Dashboard/CLIからの同一イベント再送は手動確認が残る |
 | 予約作成・決済Intent・領収書DLの復帰前実行 | 条件付き | 本番書き込みを避け、既存Productionスモーク証跡を参照。次回はStagingで再実行する |
+| 報酬/精算・返金/キャンセル料の本格管理 | β後対応 | β版では固定表示を削除し、外部管理または個別案内で代替。自動精算や返金/キャンセル料の本格画面は未実装 |
+| 日別売上推移グラフ | β後対応 | KPIは実API連携済みだが、グラフ表示は準備中として明記済み |
+| メールテンプレート・プッシュ通知・問い合わせ連絡先編集 | β後対応 | `admin/settings.html` の未連携フォームは削除済み。実設定編集API連携は未実装 |
+| 操作ログ検索・CSV出力 | β後対応 | 固定操作ログと未連携CSVボタンは削除済み。実ログ検索/出力は未実装 |
 
 ## Go / No-Go
 
