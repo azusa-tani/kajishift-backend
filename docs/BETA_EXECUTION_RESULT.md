@@ -89,19 +89,35 @@
 
 | 確認日 | 確認者 | 対象サービス | 確認対象 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |--------|--------|--------------|----------|------|--------------------------|------|--------|
-| 未記入 | 未記入 | 未記入 | 未記入 | 未確認 | 未記入 | 未記入 | 未記入 |
+| 2026-06-22 / 2026-06-25 | 谷口 | Railway | Backend Deployment / Logs / Variables / Postgres | OK（一部未確認あり） | `Screenshots/エビデンス_railway_backend-deployment-2026-06-22.png` ほか | Deployment / Variables / Postgresは確認済み。Build/Deploy logsはRailway上で本文確認不可 | ログ未確認項目は既存migration証跡と次回deploy logで補完 |
 
 ### Railway 確認
 
 | 確認項目 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |----------|------|--------------------------|------|--------|
-| 最新Backend commitがProductionに反映されている | 未確認 | 未記入 | commit SHAを記録。秘密値は記録しない | 未記入 |
-| DeploymentがActiveである | 未確認 | 未記入 | Deployments画面で確認 | 未記入 |
-| build logで `prisma generate` が成功している | 未確認 | 未記入 | `postinstall` 実行でも可 | 未記入 |
-| build/deploy logで `prisma migrate deploy` 成功、または実行方針確認済み | 未確認 | 未記入 | migration statusの証跡と矛盾しないこと | 未記入 |
-| `DATABASE_URL` が本番DB向きであることを目視確認 | 未確認 | 未記入 | 値は記録しない。必要ならマスク済みスクショのみ | 未記入 |
-| 必要に応じて `DIRECT_URL` を確認 | 未確認 | 未記入 | 未使用なら未使用理由を記録 | 未記入 |
-| CORS / operation mode / backup / Stripe系envを目視確認 | 未確認 | 未記入 | 値は記録せず、設定有無と方針のみ記録 | 未記入 |
+| 最新Backend commitがProductionに反映されている | OK | `Screenshots/エビデンス_railway_backend-deployment-2026-06-22.png` | commit / deployment id `1b08f8aa`、commit message `fix: add restore drill diagnostics` を確認 | 可能なら次回確認時に完全なcommit SHAも記録 |
+| DeploymentがActiveである | OK | `Screenshots/エビデンス_railway_backend-deployment-2026-06-22.png` | Production `kajishift-backend` の最新Deploymentが `ACTIVE`、`Deployment successful`。本番URL `kajishift-backend-production.up.railway.app`、GitHub連携、Node `22.22.3`、Region `Southeast Asia`、`1 Replica` を確認 | なし |
+| build logで `prisma generate` が成功している | 未確認 | `Screenshots/エビデンス_railway2026-06-25_railway_build_logs.png` | Build Logsは `No build logs` 表示。Railwayログ上では `prisma generate` 未確認 | 既存証跡で補完し、次回再デプロイ時にRailwayログを保存 |
+| build/deploy logで `prisma migrate deploy` 成功、または実行方針確認済み | 未確認（補完あり） | `Screenshots/エビデンス_railway2026-06-25_railway_view_logs_empty.png`, `Screenshots/エビデンス_railway2026-06-25_postgres_database.png` | Deploy Logsは `No logs in this time range`、Build Logsは `No build logs`。Railwayログ上では未確認。DB上の `_prisma_migrations` と主要テーブル存在確認、既存migration status証跡で補完 | 次回再デプロイ時にRailwayログを保存 |
+| `DATABASE_URL` が本番DB向きであることを目視確認 | OK | `Screenshots/エビデンス_railway2026-06-25_railway_variables.png` | Service Variablesに設定あり。人間が本番DB向きであることを目視確認済み。値は記録しない | なし |
+| 必要に応じて `DIRECT_URL` を確認 | 設定なし / 対象外候補 | `Screenshots/エビデンス_railway2026-06-25_railway_variables.png` | Variables画面には表示なし。現構成で必要かはPrisma設定とDB接続方式で必要に応じて確認 | 必要性が出た場合のみ再確認 |
+| CORS / operation mode / backup / Stripe系envを目視確認 | OK（一部補完確認） | `Screenshots/エビデンス_railway2026-06-25_railway_variables.png` | `CORS_ORIGIN`, `ENABLE_STRIPE_PAYMENTS`, `JWT_SECRET`, `NODE_ENV`, `PORT`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` の設定を確認。`OPERATION_MODE` とbackup関連envはVariables上になし。operationはDB永続モードと `/api/public/status`、backupはRunbookの手動 `pg_dump` / restore drill運用で補完 | operation statusとbackup運用は別証跡で継続確認 |
+
+Railway補足:
+
+- Production `kajishift-backend` のService Variablesは9件確認済み。値そのものは記録せず、スクリーンショットもRailway側のマスク表示により実値なし。
+- Deploy Logsは `No logs in this time range` のため、deploy log本文は確認不可。
+- Build Logsは `No build logs` のため、build log本文は確認不可。
+- `prisma generate` はRailwayログ上では未確認。
+- `prisma migrate deploy` はRailwayログ上では未確認。DB上の `_prisma_migrations`、主要テーブル、Ops関連テーブル存在確認と既存migration証跡で補完する。
+
+Railway Postgres確認:
+
+| 確認項目 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
+|----------|------|--------------------------|------|--------|
+| Postgres service / Deployment | OK | `Screenshots/エビデンス_railway2026-06-25_postgres_deployments.png` | Postgres service Online、Deployment `ACTIVE`、`Deployment successful`。Image `ghcr.io/railwayapp-templates/postgres-ssl:18`、Region `Southeast Asia`、`1 Replica` を確認 | なし |
+| Database画面 / スキーマ補助証跡 | OK | `Screenshots/エビデンス_railway2026-06-25_postgres_database.png` | Database画面表示、`_prisma_migrations`、`bookings`, `payments`, `users`, `stripe_events` など主要テーブル、`ops_events`, `ops_incidents`, `system_settings` などOps関連テーブルを確認 | Railwayログ上のmigrate確認とは分けて扱う |
+| Railway Backups | 未使用 / 代替運用 | `Screenshots/エビデンス_railway2026-06-25_postgres_backups.png` | Point-in-time recoveryはoff、Volume backupsは `No volume backups`、Pro plan限定表示あり。Railway管理バックアップは未使用 / なし | 既存Runbookの手動 `pg_dump` / restore drill運用で代替 |
 
 ### Vercel 確認
 
@@ -162,7 +178,7 @@
 
 | 確認項目 | 結果 | 記録 | スクリーンショット保存先またはメモ | 次対応 |
 |----------|------|------|----------------------------------|--------|
-| バックアップ保管先 | 未確認 | 未記入 | 値やURLに秘密情報がある場合はマスク | 未記入 |
+| バックアップ保管先 | 代替運用 | Railway管理バックアップは未使用 / なし | `Screenshots/エビデンス_railway2026-06-25_postgres_backups.png`。Railway PITR off、Volume backupsなし、Pro plan限定表示あり | 既存Runbookの手動 `pg_dump` / restore drill運用で継続 |
 | 保持期間 | 未確認 | 未記入 | 直近7世代以上を目安 | 未記入 |
 | 復元ドリル実施状況 | 未確認 | 未記入 | 最新runまたは手動ログ | 未記入 |
 | 次回復元ドリル予定 | 未確認 | 未記入 | 日付またはcron設定 | 未記入 |
@@ -172,13 +188,13 @@
 
 | 項目 | 状態 | ブロッカー | 次対応 | 参照先 |
 |------|------|------------|--------|--------|
-| Railway証跡 | 未確認 | No | Dashboard確認結果を記録 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| Railway証跡 | OK（一部未確認あり） | No | Build/Deploy logs、`prisma generate`、Railwayログ上の `prisma migrate deploy` は次回deploy logで補完 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | Vercel証跡 | 未確認 | No | Dashboard確認結果を記録 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | GitHub Actions / Backup | 未確認 | No | 最新runとartifactを確認 | 本ファイル、GitHub Actions |
 | Stripe | 未確認 | No | Webhook/通知/再送確認 | 本ファイル、Stripe Dashboard |
 | 外部監視・通知 | 未確認 | No | 監視設定とテスト通知を確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
 | 本番主要画面 / 停止UI | 未確認 | No | 画面・Console・Network確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
-| DBバックアップ運用 | 未確認 | No | 保管先・保持期間・次回ドリルを記録 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
+| DBバックアップ運用 | 継続 | No | Railway管理バックアップは未使用。手動 `pg_dump` / restore drill運用、保持期間、次回ドリルを継続記録 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
 
 ## 2026-06-03 テスト結果
 
