@@ -123,11 +123,17 @@ Railway Postgres確認:
 
 | 確認項目 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |----------|------|--------------------------|------|--------|
-| 最新Frontend commitがProductionに反映されている | 未確認 | 未記入 | commit SHAを記録 | 未記入 |
-| Production deploymentがActive / Readyである | 未確認 | 未記入 | Production Aliasも確認 | 未記入 |
-| Production Aliasが正しい | 未確認 | 未記入 | 利用者向けURLと一致すること | 未記入 |
-| `js/config.js` の最新markerまたはAPI接続先を確認 | 未確認 | 未記入 | API URLが本番Backendを向くこと | 未記入 |
-| Frontend URLが正常表示される | 未確認 | 未記入 | 主要ページ確認と合わせてよい | 未記入 |
+| 最新Frontend commitがProductionに反映されている | OK | `Screenshots/スクリーンショット 2026-06-26 111350.png`, `Screenshots/vercel_kajishift_frontend_2026-06-26-13_39_14.png` | commit `ad83fff`、commit message `feat: add 24h auto ops frontend status UI`、branch `main` を確認 | なし |
+| Production deploymentがActive / Readyである | OK（一部warningあり） | `Screenshots/vercel_kajishift_frontend_2026-06-26-13_39_14.png`, `Screenshots/スクリーンショット 2026-06-26 134629.png` | Production Deploymentは `Ready / Latest`、Environmentは `Production / Current`、Created `Jun 5`、Duration `4s`。Deploy Logsで `vercel build`、Vercel CLI `54.9.0`、`Build Completed`、`Deployment completed` を確認 | `builds` 定義とVercel Project Settingsの整合は必要に応じて公開後または別途確認 |
+| Production Aliasが正しい | OK | `Screenshots/vercel_kajishift_frontend_2026-06-26-13_39_14.png` | 利用者向けProduction URL `https://kajishift-frontend.vercel.app` を確認。Domains欄にProduction Aliasと関連Deployment URLが表示されていることを確認 | なし |
+| `js/config.js` の最新markerまたはAPI接続先を確認 | OK | `Screenshots/スクリーンショット 2026-06-26 135814.png`, `Screenshots/スクリーンショット 2026-06-26 140918.png` | `/js/config.js` は `200 OK`、`Content-Type: application/javascript`。marker / `KAJISHIFT_CONFIG_VERSION` は `2026-06-03-24h-auto-ops`。`API_BASE_URL` は `https://kajishift-backend-production.up.railway.app/api`、`SOCKET_SERVER_URL` は `https://kajishift-backend-production.up.railway.app`。Stripe publishable key設定あり、実値は記録しない。Secret Key / Webhook Secretは表示されていない | なし |
+| Frontend URLが正常表示される | OK | `Screenshots/スクリーンショット 2026-06-26 135402.png` | Production Aliasでcustomer向けトップ画面表示OK。`/api/public/status` と思われるstatus request `200`、Preflight `200`、CORSエラーなし。Consoleで `KAJISHIFT API initialized and attached to window.api`、`Service Worker registered successfully` を確認 | なし |
+
+Vercel補足:
+
+- Deploy Logsには、configuration fileに `builds` が存在するためVercel側のBuild and Development Settingsに関するwarningが1件表示されている。`Build Completed` / `Deployment completed` は確認済みのため、現時点ではβGoを止めるNGではない。
+- 個別Deployment URL `https://kajishift-frontend-7thrn12kz-azusas-projects-ab1d3304.vercel.app` ではCORSエラーあり。Originが個別Deployment URLのため `CORS_ORIGIN` 対象外だった可能性がある。Production Alias `https://kajishift-frontend.vercel.app` では再現しないため、β公開確認はProduction Alias基準とする。
+- 軽微な警告として `/favicon.ico` の `404` と `apple-mobile-web-app-capable` deprecated warningあり。いずれも現時点ではβGoを止める重大エラーではない。
 
 ### GitHub Actions / Backup 確認
 
@@ -189,7 +195,7 @@ Railway Postgres確認:
 | 項目 | 状態 | ブロッカー | 次対応 | 参照先 |
 |------|------|------------|--------|--------|
 | Railway証跡 | OK（一部未確認あり） | No | Build/Deploy logs、`prisma generate`、Railwayログ上の `prisma migrate deploy` は次回deploy logで補完 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
-| Vercel証跡 | 未確認 | No | Dashboard確認結果を記録 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| Vercel証跡 | OK（一部warningあり） | No | `builds` warningと個別Deployment URLのCORSは補足扱い。Production Alias基準では画面表示、API接続、CORS、operation status取得が正常 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | GitHub Actions / Backup | 未確認 | No | 最新runとartifactを確認 | 本ファイル、GitHub Actions |
 | Stripe | 未確認 | No | Webhook/通知/再送確認 | 本ファイル、Stripe Dashboard |
 | 外部監視・通知 | 未確認 | No | 監視設定とテスト通知を確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
