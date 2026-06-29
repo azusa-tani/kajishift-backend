@@ -92,6 +92,7 @@
 | 2026-06-22 / 2026-06-25 | 谷口 | Railway | Backend Deployment / Logs / Variables / Postgres | OK（一部未確認あり） | `Screenshots/エビデンス_railway_backend-deployment-2026-06-22.png` ほか | Deployment / Variables / Postgresは確認済み。Build/Deploy logsはRailway上で本文確認不可 | ログ未確認項目は既存migration証跡と次回deploy logで補完 |
 | 2026-06-29 | Cursor | GitHub Actions | Database backup and restore drill | OK（一部未確認あり） | 未保存（GitHub Actions API / run URLで確認） | 最新run `#34` がsuccess。backup / weekly-restore-drill jobs成功、artifact存在確認済み | Node.js 20 warning有無はログ本文をDashboardで確認 |
 | 2026-06-29 | 谷口 梓 | Vercel Production Alias | customer主要画面 | OK（一部後続確認あり） | `Screenshots/2026-06-29-production-main-screens/` | login / dashboard / bookings / payment / favoritesの表示、主要API 200、重大Console/Networkエラーなしを確認。スクショ内の個人名・メール・住所・予約情報・userId風の値は本文に記録しない | worker/admin主要画面、`KajishiftOps`明示確認、停止UI、通知Socket再接続などを後続確認 |
+| 2026-06-29 | 谷口 梓 | Vercel Production Alias | worker主要画面 | NG（一部OK） | `Screenshots/2026-06-29-production-main-screens/` | login / dashboard / jobs / calendar / profileは重大NGなし。rewardsは `/api/payments?limit=100` が500となり、読み込み中表示が残る | rewardsの本番反映状態を修正。admin主要画面、`KajishiftOps`明示確認、停止UIは後続確認 |
 
 ### Railway 確認
 
@@ -174,12 +175,12 @@ Vercel補足:
 | 確認項目 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |----------|------|--------------------------|------|--------|
 | customer主要画面が表示される | OK | `Screenshots/2026-06-29-production-main-screens/` | Production Aliasで login / dashboard / bookings / payment / favorites を確認。重大な表示崩れなし、β公開中バナー表示あり | 通知Socket再接続/複数端末E2E、お気に入り追加/解除、チャット画像添付は後続確認 |
-| worker主要画面が表示される | 未確認 | 未記入 | 重大なConsole/Networkエラーなし | 未記入 |
+| worker主要画面が表示される | NG（一部OK） | `Screenshots/2026-06-29-production-main-screens/` | Production Aliasで login / dashboard / jobs / calendar / profile は重大NGなし。rewardsは画面の一部表示はOKだが、報酬サマリー・支払い履歴・今月の仕事詳細が読み込み中のまま残る | rewardsの500原因修正が必要 |
 | admin主要画面が表示される | 未確認 | 未記入 | 重大なConsole/Networkエラーなし | 未記入 |
-| Console重大エラーなし | OK（customer範囲） | `Screenshots/2026-06-29-production-main-screens/` | customer主要画面では重大Consoleエラーなし。`apple-mobile-web-app-capable` deprecated warning、WebSocket初回接続warning、通常ブラウザで一度出たDevTools系と思われるVMエラーはいずれもβGoを止める重大NGではない。VMエラーはシークレットウィンドウで再現なし | worker/admin画面でも別途確認 |
-| Network重大エラーなし | OK（customer範囲） | `Screenshots/2026-06-29-production-main-screens/` | customer主要画面ではstatus系fetch、Preflight、me / unread-count / bookings / payments / cards / notifications / favorites等の主要APIが200。WebSocket 101またはSocket.io接続成功を確認。500系APIとCORSエラーなし | worker/admin画面でも別途確認 |
+| Console重大エラーなし | NG（worker rewards） | `Screenshots/2026-06-29-production-main-screens/` | customer主要画面とworkerのlogin / dashboard / jobs / calendar / profileでは重大Consoleエラーなし。worker rewardsで「決済履歴を取得できるのは顧客または管理者のみです」の重大エラーあり。軽微warningとして `apple-mobile-web-app-capable` deprecated warningあり | admin画面でも別途確認 |
+| Network重大エラーなし | NG（worker rewards） | `Screenshots/2026-06-29-production-main-screens/` | worker rewardsで `GET https://kajishift-backend-production.up.railway.app/api/payments?limit=100` が500。customer主要画面とworkerの他画面では確認範囲の主要API 200、Preflight 200、CORSエラーなし | rewardsのAPI呼び出しを修正。admin画面でも別途確認 |
 | `KajishiftOps` 読み込み確認 | 未確認 | 未記入 | `window.KajishiftOps` 等で確認 | 未記入 |
-| operation status取得確認 | OK（customer範囲） | `Screenshots/2026-06-29-production-main-screens/` | Frontend Production AliasからRailway本番Backendの `/api/public/status` への通信を確認。記録URL: `https://kajishift-backend-production.up.railway.app/api/public/status?_=...-2026-06-03-24h-auto-ops` | worker/admin画面でも必要に応じて確認 |
+| operation status取得確認 | OK（customer / worker範囲） | `Screenshots/2026-06-29-production-main-screens/` | Frontend Production AliasからRailway本番Backendの `/api/public/status` への通信を確認。記録URL: `https://kajishift-backend-production.up.railway.app/api/public/status?_=...-2026-06-03-24h-auto-ops` | admin画面でも必要に応じて確認 |
 | 停止バナー / 503 UI確認 | 未確認 | 未記入 | Stagingまたは安全な確認方法で実施 | 未記入 |
 
 customer主要画面確認詳細:
@@ -197,6 +198,38 @@ customer主要画面の総合判定:
 - login / dashboard / bookings / payment / favorites は、表示・主要API通信・Console/Networkの観点で重大NGなし。
 - βGo判定を覆す明確なNGなし。
 - 後続確認: worker主要画面、admin主要画面、`window.KajishiftOps` 明示確認、停止バナー / 503 UI、通知Socket再接続/複数端末E2E、お気に入り追加/解除の実ブラウザE2E、チャット画像添付の実ブラウザE2E。
+
+worker主要画面確認詳細:
+
+| 対象 | URL | 結果 | 確認内容 | 補足 / 後続確認 |
+|------|-----|------|----------|----------------|
+| workerログイン | `https://kajishift-frontend.vercel.app/worker/login.html` | OK | 画面表示OK、重大な表示崩れなし、β公開中バナー表示あり。Service Worker登録ログ、status系fetch 200、Preflight 200、500系APIなし、CORSエラーなし | `apple-mobile-web-app-capable` deprecated warningは軽微warning扱い |
+| workerダッシュボード | `https://kajishift-frontend.vercel.app/worker/dashboard.html` | OK | 画面表示OK、重大な表示崩れなし、β公開中バナー表示あり。API初期化ログ、Socket.io接続成功、status系fetch 200、bookings系fetch 200、unread-count 200、Preflight 200、WebSocket 101、500系APIなし、CORSエラーなし | スクショ内のワーカー名・userId風の値は記録しない |
+| worker仕事一覧 | `https://kajishift-frontend.vercel.app/worker/jobs.html` | OK | 画面表示OK、条件絞り込みUI表示あり。API初期化ログ、Socket.io接続成功、bookings available系fetch 200、status系fetch 200、unread-count 200、Preflight 200、WebSocket 101、500系APIなし、CORSエラーなし | なし |
+| workerカレンダー | `https://kajishift-frontend.vercel.app/worker/calendar.html` | OK | 画面表示OK、月表示カレンダーと予定表示あり。API初期化ログ、Socket.io接続成功、bookings confirmed/in_progress系fetch 200、status系fetch 200、unread-count 200、Preflight 200、WebSocket 101、500系APIなし、CORSエラーなし | なし |
+| worker報酬管理 | `https://kajishift-frontend.vercel.app/worker/rewards.html` | NG / 要修正 | 報酬管理画面は一部表示OKだが、Console重大エラーとNetwork 500あり。対象APIは `GET https://kajishift-backend-production.up.railway.app/api/payments?limit=100`。通常ブラウザとシークレットモードの両方で再現。Socket.io接続成功、status系fetch 200、bookings completed系fetch 200、見える範囲でCORSエラーなし | 報酬サマリー、支払い履歴、今月の仕事詳細が読み込み中のまま残る。worker向け報酬管理をβ運用で使う場合は修正優先。βスコープ外にする場合も制限事項として明記が必要 |
+| workerプロフィール | `https://kajishift-frontend.vercel.app/worker/profile.html` | OK | 画面表示OK、プロフィール・基本情報表示OK。API初期化ログ、Socket.io接続成功、status系fetch 200、worker/profile系と思われるfetch 200、unread-count 200、Preflight 200、500系APIなし、CORSエラーなし | 氏名・メールアドレス・電話番号・評価・プロフィール情報は確認用アカウント由来のDBデータとして扱い、実値は記録しない |
+
+worker rewards 500原因調査:
+
+| 確認観点 | 結果 |
+|----------|------|
+| Frontend本番の呼び出し箇所 | Production反映済みとして記録済みのFrontend `ad83fff` では、`worker/rewards.html` の `loadRewards()` が `api.getPayments({ limit: 100 })` を呼ぶ。`api.getPayments()` は `js/api.js` で `/payments?limit=100` を生成する |
+| Frontend現行mainとの差分 | 現行Frontend main `0fe8f7d` では `f83cebc fix: hide sample worker reward account details` により、`worker/rewards.html` から `api.getPayments()` 呼び出しと固定報酬/口座表示は削除済み。完了予約APIのみで「今月の完了した仕事」を表示する構成 |
+| Backend `/api/payments` の権限制御 | `src/routes/payments.js` の `GET /` は認証後に `paymentController.getPayments` を呼ぶ。`src/services/paymentService.js` の `getPayments()` は `CUSTOMER` と `ADMIN` のみ許可し、`WORKER` では「決済履歴を取得できるのは顧客または管理者のみです」をthrowする |
+| 500になる理由 | `paymentService.getPayments()` のWORKER拒否は `err.status` なしの通常Error。`src/middleware/errorHandler.js` は `err.status || err.statusCode || 500` を返すため、本番では500として返る |
+| worker報酬管理として本来呼ぶべきAPI | 現行mainの方針では、worker報酬/精算詳細はβ版準備中とし、worker自身の完了仕事は `api.getBookings({ status: 'COMPLETED', startDate, endDate, limit: 100 })` で取得する。worker専用の報酬/精算APIは確認範囲では存在しない |
+| 読み込み中が残る原因 | `ad83fff` 版は `Promise.all([api.getBookings(...), api.getPayments(...)])` の片方であるpaymentsが失敗するとcatchへ入り、summary/payment/rewards描画関数が呼ばれない。初期DOMの「読み込み中...」が残る |
+| βGo判定への影響 | worker向け報酬管理をβ運用で使う場合はユーザーに見える不具合のため修正優先。βスコープ外にする場合も、準備中機能として明記し、読み込み中や500を出さない状態にする必要あり |
+
+worker rewards 最小修正案:
+
+1. 最小候補: 既にFrontend mainに入っている `f83cebc` 以降をProduction Aliasへ反映し、`worker/rewards.html` が `/api/payments` を呼ばない状態にする。Backend変更なしで、β版では報酬・精算詳細を準備中表示、完了仕事のみ `GET /api/bookings` 由来で表示する。
+2. 追加の安全策: Frontendで `worker/rewards.html` のエラー時に各表示領域を「準備中」または「完了した仕事を取得できませんでした」に置き換え、読み込み中を残さない。
+3. Backend側の代替案: `/api/payments` のWORKER拒否に403を付与する。ただしこれは500分類を正すだけで、worker rewards画面の読み込み中問題と不正なAPI呼び出しは解消しない。
+4. 将来対応: worker向け報酬/精算をβ範囲に含めるなら、payments流用ではなくworker専用の報酬/精算APIを設計し、公開対象フィールドを限定する。
+
+今回の調査では実装修正・テスト修正・DB操作・外部サービス操作は実施していない。
 
 ### DBバックアップ運用確認
 
@@ -217,7 +250,7 @@ customer主要画面の総合判定:
 | GitHub Actions / Backup | OK（一部未確認あり） | No | 最新run `#34` はbackup / weekly restore drillともsuccess、artifact 7日保持も確認済み。Node.js 20 warning有無はDashboardログ本文で追加確認 | 本ファイル、GitHub Actions |
 | Stripe | 未確認 | No | Webhook/通知/再送確認 | 本ファイル、Stripe Dashboard |
 | 外部監視・通知 | 未確認 | No | 監視設定とテスト通知を確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
-| 本番主要画面 / 停止UI | 一部OK | No | customer主要画面は重大NGなし。worker/admin主要画面、`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| 本番主要画面 / 停止UI | NG（一部OK） | Yes（worker rewardsをβ運用で使う場合） | customer主要画面は重大NGなし。workerはlogin/dashboard/jobs/calendar/profileはOKだが、rewardsで500と読み込み中残りあり。admin主要画面、`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | DBバックアップ運用 | 継続（一部OK） | No | Railway管理バックアップは未使用。GitHub Actionsで日次backup、週次restore drill、artifact 7日保持を確認。責任者は未確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
 
 ## 2026-06-03 テスト結果
