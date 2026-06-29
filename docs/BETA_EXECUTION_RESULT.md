@@ -1,6 +1,6 @@
 # KAJISHIFT β公開 実行結果
 
-最終更新: 2026-06-17
+最終更新: 2026-06-29
 
 ## 実行済み
 
@@ -90,6 +90,8 @@
 | 確認日 | 確認者 | 対象サービス | 確認対象 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |--------|--------|--------------|----------|------|--------------------------|------|--------|
 | 2026-06-22 / 2026-06-25 | 谷口 | Railway | Backend Deployment / Logs / Variables / Postgres | OK（一部未確認あり） | `Screenshots/エビデンス_railway_backend-deployment-2026-06-22.png` ほか | Deployment / Variables / Postgresは確認済み。Build/Deploy logsはRailway上で本文確認不可 | ログ未確認項目は既存migration証跡と次回deploy logで補完 |
+| 2026-06-29 | Cursor | GitHub Actions | Database backup and restore drill | OK（一部未確認あり） | 未保存（GitHub Actions API / run URLで確認） | 最新run `#34` がsuccess。backup / weekly-restore-drill jobs成功、artifact存在確認済み | Node.js 20 warning有無はログ本文をDashboardで確認 |
+| 2026-06-29 | 谷口 梓 | Vercel Production Alias | customer主要画面 | OK（一部後続確認あり） | `Screenshots/2026-06-29-production-main-screens/` | login / dashboard / bookings / payment / favoritesの表示、主要API 200、重大Console/Networkエラーなしを確認。スクショ内の個人名・メール・住所・予約情報・userId風の値は本文に記録しない | worker/admin主要画面、`KajishiftOps`明示確認、停止UI、通知Socket再接続などを後続確認 |
 
 ### Railway 確認
 
@@ -139,10 +141,10 @@ Vercel補足:
 
 | 確認項目 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |----------|------|--------------------------|------|--------|
-| 最新の backup / restore drill が成功している | 未確認 | 未記入 | `Database backup and restore drill #6` または最新run | 未記入 |
-| backup artifactが存在する | 未確認 | 未記入 | artifact名、サイズ、作成時刻を記録 | 未記入 |
-| artifact保管期間を確認した | 未確認 | 未記入 | GitHub Actions設定または運用方針 | 未記入 |
-| Node.js 20 warningの有無を確認した | 未確認 | 未記入 | warningありなら「公開後対応」または「要対応」を記録 | 未記入 |
+| 最新の backup / restore drill が成功している | OK | 未保存（GitHub Actions run `https://github.com/azusa-tani/kajishift-backend/actions/runs/28335305228`） | `Database backup and restore drill #34`。event `schedule`、branch `main`、head SHA `9a105c46383cba19158003c3d8815d225a7441a3`、2026-06-28T20:40:09Z開始、conclusion `success`。`backup` jobと `weekly-restore-drill` jobがどちらもsuccess | なし |
+| backup artifactが存在する | OK | 未保存（GitHub Actions APIで確認） | artifact `kajishift-db-backup`、id `7938404186`、size `70767` bytes、created `2026-06-28T20:41:03Z`、expired `false`、run id `28335305228` | なし |
+| artifact保管期間を確認した | OK | `.github/workflows/database-backup.yml` / GitHub Actions API | workflowの `retention-days: 7` と、最新artifactの `expires_at=2026-07-05T20:41:03Z` を確認 | なし |
+| Node.js 20 warningの有無を確認した | 未確認 | 未保存 | Workflowは `actions/setup-node@v4`、`node-version: '20'`。GitHub APIでjob/step成功は確認済みだが、ログ本文取得はタイムアウトしたためwarning本文の有無は未確認 | GitHub Actions Dashboardでログ本文を目視確認 |
 
 ### Stripe 確認
 
@@ -171,23 +173,39 @@ Vercel補足:
 
 | 確認項目 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |----------|------|--------------------------|------|--------|
-| customer主要画面が表示される | 未確認 | 未記入 | 重大なConsole/Networkエラーなし | 未記入 |
+| customer主要画面が表示される | OK | `Screenshots/2026-06-29-production-main-screens/` | Production Aliasで login / dashboard / bookings / payment / favorites を確認。重大な表示崩れなし、β公開中バナー表示あり | 通知Socket再接続/複数端末E2E、お気に入り追加/解除、チャット画像添付は後続確認 |
 | worker主要画面が表示される | 未確認 | 未記入 | 重大なConsole/Networkエラーなし | 未記入 |
 | admin主要画面が表示される | 未確認 | 未記入 | 重大なConsole/Networkエラーなし | 未記入 |
-| Console重大エラーなし | 未確認 | 未記入 | 警告とブロッカーを区別して記録 | 未記入 |
-| Network重大エラーなし | 未確認 | 未記入 | 404/500/認証エラーの扱いを記録 | 未記入 |
+| Console重大エラーなし | OK（customer範囲） | `Screenshots/2026-06-29-production-main-screens/` | customer主要画面では重大Consoleエラーなし。`apple-mobile-web-app-capable` deprecated warning、WebSocket初回接続warning、通常ブラウザで一度出たDevTools系と思われるVMエラーはいずれもβGoを止める重大NGではない。VMエラーはシークレットウィンドウで再現なし | worker/admin画面でも別途確認 |
+| Network重大エラーなし | OK（customer範囲） | `Screenshots/2026-06-29-production-main-screens/` | customer主要画面ではstatus系fetch、Preflight、me / unread-count / bookings / payments / cards / notifications / favorites等の主要APIが200。WebSocket 101またはSocket.io接続成功を確認。500系APIとCORSエラーなし | worker/admin画面でも別途確認 |
 | `KajishiftOps` 読み込み確認 | 未確認 | 未記入 | `window.KajishiftOps` 等で確認 | 未記入 |
-| operation status取得確認 | 未確認 | 未記入 | `/api/public/status` または同等のNetwork確認 | 未記入 |
+| operation status取得確認 | OK（customer範囲） | `Screenshots/2026-06-29-production-main-screens/` | Frontend Production AliasからRailway本番Backendの `/api/public/status` への通信を確認。記録URL: `https://kajishift-backend-production.up.railway.app/api/public/status?_=...-2026-06-03-24h-auto-ops` | worker/admin画面でも必要に応じて確認 |
 | 停止バナー / 503 UI確認 | 未確認 | 未記入 | Stagingまたは安全な確認方法で実施 | 未記入 |
+
+customer主要画面確認詳細:
+
+| 対象 | URL | 結果 | 確認内容 | 補足 / 後続確認 |
+|------|-----|------|----------|----------------|
+| customerログイン | `https://kajishift-frontend.vercel.app/customer/login.html` | OK | 画面表示OK、重大な表示崩れなし、β公開中バナー表示あり。API初期化ログ、Service Worker登録ログ、status系fetch 200、Preflight 200、500系APIなし、CORSエラーなし | ログインフォーム入力値を含むスクショのため、メールアドレス等の実値は記録しない。`apple-mobile-web-app-capable` deprecated warningは軽微warning扱い |
+| customerダッシュボード | `https://kajishift-frontend.vercel.app/customer/dashboard.html` | OK | 画面表示OK、重大な表示崩れなし、β公開中バナー、クイックアクション、通知バッジ表示あり。status系fetch、Preflight、me / unread-count / bookings / payments / notifications が200。500系APIなし、CORSエラーなし | WebSocket初回接続warning後にSocket.io接続成功・接続確認ログあり。通知Socket再接続/複数端末E2Eは後続確認 |
+| customer予約一覧 | `https://kajishift-frontend.vercel.app/customer/bookings.html` | OK | 画面表示OK、重大な表示崩れなし、β公開中バナー表示あり。API初期化ログ、Socket.io接続成功、status系fetch 200、bookings fetch 200、unread-count fetch 200、Preflight 200、WebSocket 101、500系APIなし、CORSエラーなし | 予約内容は確認用アカウント由来のDBデータとして扱い、個人名・住所・予約情報・userId等の実値は記録しない |
+| customer決済・履歴 | `https://kajishift-frontend.vercel.app/customer/payment.html` | OK | 画面表示OK、重大な表示崩れなし、β公開中バナー、支払い方法欄、利用履歴欄表示あり。API初期化ログ、Service Workerログ、Socket.io接続成功、status系fetch 200、Preflight 200、me / payments / cards / notifications unread-count等が200。500系APIなし、CORSエラーなし | 通常ブラウザで一度出た `window.__chromium_devtools_metrics_reporter is not a function` はシークレットウィンドウで再現なし。発生元はVM系で、Chrome拡張機能またはDevTools側ノイズの可能性が高く、重大NGではない |
+| customerお気に入り | `https://kajishift-frontend.vercel.app/customer/favorites.html` | OK | 画面表示OK、重大な表示崩れなし、β公開中バナー表示あり。API初期化ログ、Socket.io接続成功、status系fetch 200、favorites fetch 200、unread-count fetch 200、Preflight 200、WebSocket 101、500系APIなし、CORSエラーなし | お気に入りワーカー情報は確認用アカウント由来のDBデータとして扱い、個人名・userId等の実値は記録しない。お気に入り追加/解除の実ブラウザE2Eは後続確認 |
+
+customer主要画面の総合判定:
+
+- login / dashboard / bookings / payment / favorites は、表示・主要API通信・Console/Networkの観点で重大NGなし。
+- βGo判定を覆す明確なNGなし。
+- 後続確認: worker主要画面、admin主要画面、`window.KajishiftOps` 明示確認、停止バナー / 503 UI、通知Socket再接続/複数端末E2E、お気に入り追加/解除の実ブラウザE2E、チャット画像添付の実ブラウザE2E。
 
 ### DBバックアップ運用確認
 
 | 確認項目 | 結果 | 記録 | スクリーンショット保存先またはメモ | 次対応 |
 |----------|------|------|----------------------------------|--------|
 | バックアップ保管先 | 代替運用 | Railway管理バックアップは未使用 / なし | `Screenshots/エビデンス_railway2026-06-25_postgres_backups.png`。Railway PITR off、Volume backupsなし、Pro plan限定表示あり | 既存Runbookの手動 `pg_dump` / restore drill運用で継続 |
-| 保持期間 | 未確認 | 未記入 | 直近7世代以上を目安 | 未記入 |
-| 復元ドリル実施状況 | 未確認 | 未記入 | 最新runまたは手動ログ | 未記入 |
-| 次回復元ドリル予定 | 未確認 | 未記入 | 日付またはcron設定 | 未記入 |
+| 保持期間 | OK | GitHub Actions artifact 7日保持 | `.github/workflows/database-backup.yml` の `retention-days: 7` と最新artifactの `expires_at=2026-07-05T20:41:03Z` を確認 | 直近7世代以上が必要な場合は保持期間延長または外部保管を検討 |
+| 復元ドリル実施状況 | OK | GitHub Actions run `#34` | `weekly-restore-drill` jobが2026-06-28T20:41:09Z開始、2026-06-28T20:42:36Z完了、conclusion `success` | なし |
+| 次回復元ドリル予定 | OK | cron `30 19 * * 0` | 週次restore drillは毎週日曜19:30 UTC（日本時間 月曜04:30）予定。日次backupは `0 18 * * *` | 実行後に最新runを再確認 |
 | 責任者 | 未確認 | 未記入 | 個人名または役割名 | 未記入 |
 
 ### ステータス集計
@@ -196,11 +214,11 @@ Vercel補足:
 |------|------|------------|--------|--------|
 | Railway証跡 | OK（一部未確認あり） | No | Build/Deploy logs、`prisma generate`、Railwayログ上の `prisma migrate deploy` は次回deploy logで補完 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | Vercel証跡 | OK（一部warningあり） | No | `builds` warningと個別Deployment URLのCORSは補足扱い。Production Alias基準では画面表示、API接続、CORS、operation status取得が正常 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
-| GitHub Actions / Backup | 未確認 | No | 最新runとartifactを確認 | 本ファイル、GitHub Actions |
+| GitHub Actions / Backup | OK（一部未確認あり） | No | 最新run `#34` はbackup / weekly restore drillともsuccess、artifact 7日保持も確認済み。Node.js 20 warning有無はDashboardログ本文で追加確認 | 本ファイル、GitHub Actions |
 | Stripe | 未確認 | No | Webhook/通知/再送確認 | 本ファイル、Stripe Dashboard |
 | 外部監視・通知 | 未確認 | No | 監視設定とテスト通知を確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
-| 本番主要画面 / 停止UI | 未確認 | No | 画面・Console・Network確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
-| DBバックアップ運用 | 継続 | No | Railway管理バックアップは未使用。手動 `pg_dump` / restore drill運用、保持期間、次回ドリルを継続記録 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
+| 本番主要画面 / 停止UI | 一部OK | No | customer主要画面は重大NGなし。worker/admin主要画面、`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| DBバックアップ運用 | 継続（一部OK） | No | Railway管理バックアップは未使用。GitHub Actionsで日次backup、週次restore drill、artifact 7日保持を確認。責任者は未確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
 
 ## 2026-06-03 テスト結果
 
