@@ -93,6 +93,7 @@
 | 2026-06-29 | Cursor | GitHub Actions | Database backup and restore drill | OK（一部未確認あり） | 未保存（GitHub Actions API / run URLで確認） | 最新run `#34` がsuccess。backup / weekly-restore-drill jobs成功、artifact存在確認済み | Node.js 20 warning有無はログ本文をDashboardで確認 |
 | 2026-06-29 | 谷口 梓 | Vercel Production Alias | customer主要画面 | OK（一部後続確認あり） | `Screenshots/2026-06-29-production-main-screens/` | login / dashboard / bookings / payment / favoritesの表示、主要API 200、重大Console/Networkエラーなしを確認。スクショ内の個人名・メール・住所・予約情報・userId風の値は本文に記録しない | worker/admin主要画面、`KajishiftOps`明示確認、停止UI、通知Socket再接続などを後続確認 |
 | 2026-06-29 | 谷口 梓 | Vercel Production Alias | worker主要画面 | NG（一部OK） | `Screenshots/2026-06-29-production-main-screens/` | login / dashboard / jobs / calendar / profileは重大NGなし。rewardsは `/api/payments?limit=100` が500となり、読み込み中表示が残る | rewardsの本番反映状態を修正。admin主要画面、`KajishiftOps`明示確認、停止UIは後続確認 |
+| 2026-07-01 | 谷口 梓 | Vercel Production / Production Alias | 最新Frontend反映とworker rewards再確認 | OK | `Screenshots/`（証跡用、Git管理対象外） | Vercel Dashboardで `kajishift-frontend` のProduction Deploymentが `fix: clarify unavailable admin settings`、commit `0fe8f7d`、branch `main`、Status `Ready`、Environment `Production` であることを確認。Production Aliasの `worker/rewards.html` では報酬・精算詳細が準備中である旨の文言、`GET /api/bookings?status=COMPLETED...` 200、status系 200、`me` 200、`unread-count` 200、WebSocket 101、Socket.io接続成功を確認。`/api/payments?limit=100`、Network 500、CORSエラー、Console重大エラーは発生なし。スクショ内のuserId風の値は本文に記録しない | Stripe Dashboard、外部監視・通知、admin主要画面、停止UI確認は継続 |
 
 ### Railway 確認
 
@@ -127,6 +128,7 @@ Railway Postgres確認:
 | 確認項目 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |----------|------|--------------------------|------|--------|
 | 最新Frontend commitがProductionに反映されている | OK | `Screenshots/スクリーンショット 2026-06-26 111350.png`, `Screenshots/vercel_kajishift_frontend_2026-06-26-13_39_14.png` | commit `ad83fff`、commit message `feat: add 24h auto ops frontend status UI`、branch `main` を確認 | なし |
+| 最新Frontend main `0fe8f7d` がProductionに反映されている | OK | `Screenshots/`（証跡用、Git管理対象外） | 2026-07-01にVercel DashboardでDeployment message `fix: clarify unavailable admin settings`、commit `0fe8f7d`、branch `main`、Status `Ready`、Environment `Production` を確認。Frontend最新mainがProductionへ反映済みと判断 | なし |
 | Production deploymentがActive / Readyである | OK（一部warningあり） | `Screenshots/vercel_kajishift_frontend_2026-06-26-13_39_14.png`, `Screenshots/スクリーンショット 2026-06-26 134629.png` | Production Deploymentは `Ready / Latest`、Environmentは `Production / Current`、Created `Jun 5`、Duration `4s`。Deploy Logsで `vercel build`、Vercel CLI `54.9.0`、`Build Completed`、`Deployment completed` を確認 | `builds` 定義とVercel Project Settingsの整合は必要に応じて公開後または別途確認 |
 | Production Aliasが正しい | OK | `Screenshots/vercel_kajishift_frontend_2026-06-26-13_39_14.png` | 利用者向けProduction URL `https://kajishift-frontend.vercel.app` を確認。Domains欄にProduction Aliasと関連Deployment URLが表示されていることを確認 | なし |
 | `js/config.js` の最新markerまたはAPI接続先を確認 | OK | `Screenshots/スクリーンショット 2026-06-26 135814.png`, `Screenshots/スクリーンショット 2026-06-26 140918.png` | `/js/config.js` は `200 OK`、`Content-Type: application/javascript`。marker / `KAJISHIFT_CONFIG_VERSION` は `2026-06-03-24h-auto-ops`。`API_BASE_URL` は `https://kajishift-backend-production.up.railway.app/api`、`SOCKET_SERVER_URL` は `https://kajishift-backend-production.up.railway.app`。Stripe publishable key設定あり、実値は記録しない。Secret Key / Webhook Secretは表示されていない | なし |
@@ -208,6 +210,7 @@ worker主要画面確認詳細:
 | worker仕事一覧 | `https://kajishift-frontend.vercel.app/worker/jobs.html` | OK | 画面表示OK、条件絞り込みUI表示あり。API初期化ログ、Socket.io接続成功、bookings available系fetch 200、status系fetch 200、unread-count 200、Preflight 200、WebSocket 101、500系APIなし、CORSエラーなし | なし |
 | workerカレンダー | `https://kajishift-frontend.vercel.app/worker/calendar.html` | OK | 画面表示OK、月表示カレンダーと予定表示あり。API初期化ログ、Socket.io接続成功、bookings confirmed/in_progress系fetch 200、status系fetch 200、unread-count 200、Preflight 200、WebSocket 101、500系APIなし、CORSエラーなし | なし |
 | worker報酬管理 | `https://kajishift-frontend.vercel.app/worker/rewards.html` | NG / 要修正 | 報酬管理画面は一部表示OKだが、Console重大エラーとNetwork 500あり。対象APIは `GET https://kajishift-backend-production.up.railway.app/api/payments?limit=100`。通常ブラウザとシークレットモードの両方で再現。Socket.io接続成功、status系fetch 200、bookings completed系fetch 200、見える範囲でCORSエラーなし | 報酬サマリー、支払い履歴、今月の仕事詳細が読み込み中のまま残る。worker向け報酬管理をβ運用で使う場合は修正優先。βスコープ外にする場合も制限事項として明記が必要 |
+| worker報酬管理（2026-07-01再確認） | `https://kajishift-frontend.vercel.app/worker/rewards.html` | OK | Frontend Production `0fe8f7d` 反映後に本番ブラウザで再確認。報酬管理画面表示OK、β版では報酬・精算詳細が準備中である旨の文言を確認。見える範囲で旧「読み込み中...」残りなし。`/api/payments?limit=100` は発生せず、`GET /api/bookings?status=COMPLETED...`、status系、`me`、`unread-count` は200。WebSocket 101、Socket.io接続成功。Console重大エラー、Network 500、CORSエラーなし | スクショ内のuserId風の値は本文に記録しない。以前のworker rewards 500は再現しない |
 | workerプロフィール | `https://kajishift-frontend.vercel.app/worker/profile.html` | OK | 画面表示OK、プロフィール・基本情報表示OK。API初期化ログ、Socket.io接続成功、status系fetch 200、worker/profile系と思われるfetch 200、unread-count 200、Preflight 200、500系APIなし、CORSエラーなし | 氏名・メールアドレス・電話番号・評価・プロフィール情報は確認用アカウント由来のDBデータとして扱い、実値は記録しない |
 
 worker rewards 500原因調査:
@@ -231,6 +234,13 @@ worker rewards 最小修正案:
 
 今回の調査では実装修正・テスト修正・DB操作・外部サービス操作は実施していない。
 
+2026-07-01追記:
+
+- Vercel DashboardでFrontend Production Deploymentが `0fe8f7d fix: clarify unavailable admin settings`、branch `main`、Status `Ready`、Environment `Production` であることを人間が確認した。
+- Production Aliasの `worker/rewards.html` では、旧 `/api/payments?limit=100` の500は再現しない。
+- 報酬管理画面はβ版の報酬・精算詳細準備中文言へ更新され、見える範囲で「読み込み中...」が残る問題は解消済み。
+- 本確認では実装修正、DB操作、外部サービス設定変更は実施していない。
+
 ### DBバックアップ運用確認
 
 | 確認項目 | 結果 | 記録 | スクリーンショット保存先またはメモ | 次対応 |
@@ -246,11 +256,11 @@ worker rewards 最小修正案:
 | 項目 | 状態 | ブロッカー | 次対応 | 参照先 |
 |------|------|------------|--------|--------|
 | Railway証跡 | OK（一部未確認あり） | No | Build/Deploy logs、`prisma generate`、Railwayログ上の `prisma migrate deploy` は次回deploy logで補完 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
-| Vercel証跡 | OK（一部warningあり） | No | `builds` warningと個別Deployment URLのCORSは補足扱い。Production Alias基準では画面表示、API接続、CORS、operation status取得が正常 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| Vercel証跡 | OK（一部warningあり） | No | 2026-07-01にFrontend Production `0fe8f7d` 反映を確認。`builds` warningと個別Deployment URLのCORSは補足扱い。Production Alias基準では画面表示、API接続、CORS、operation status取得が正常 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | GitHub Actions / Backup | OK（一部未確認あり） | No | 最新run `#34` はbackup / weekly restore drillともsuccess、artifact 7日保持も確認済み。Node.js 20 warning有無はDashboardログ本文で追加確認 | 本ファイル、GitHub Actions |
 | Stripe | 未確認 | No | Webhook/通知/再送確認 | 本ファイル、Stripe Dashboard |
 | 外部監視・通知 | 未確認 | No | 監視設定とテスト通知を確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
-| 本番主要画面 / 停止UI | NG（一部OK） | Yes（worker rewardsをβ運用で使う場合） | customer主要画面は重大NGなし。workerはlogin/dashboard/jobs/calendar/profileはOKだが、rewardsで500と読み込み中残りあり。admin主要画面、`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| 本番主要画面 / 停止UI | OK（一部未確認あり） | No | customer主要画面は重大NGなし。worker rewardsは2026-07-01再確認で `/api/payments?limit=100` 500と読み込み中残りが再現しないことを確認。admin主要画面、`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | DBバックアップ運用 | 継続（一部OK） | No | Railway管理バックアップは未使用。GitHub Actionsで日次backup、週次restore drill、artifact 7日保持を確認。責任者は未確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
 
 ## 2026-06-03 テスト結果
