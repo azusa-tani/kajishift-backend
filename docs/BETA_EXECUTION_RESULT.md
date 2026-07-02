@@ -95,15 +95,16 @@
 | 2026-06-29 | 谷口 梓 | Vercel Production Alias | worker主要画面 | NG（一部OK） | `Screenshots/2026-06-29-production-main-screens/` | login / dashboard / jobs / calendar / profileは重大NGなし。rewardsは `/api/payments?limit=100` が500となり、読み込み中表示が残る | rewardsの本番反映状態を修正。admin主要画面、`KajishiftOps`明示確認、停止UIは後続確認 |
 | 2026-07-01 | 谷口 梓 | Vercel Production / Production Alias | 最新Frontend反映とworker rewards再確認 | OK | `Screenshots/`（証跡用、Git管理対象外） | Vercel Dashboardで `kajishift-frontend` のProduction Deploymentが `fix: clarify unavailable admin settings`、commit `0fe8f7d`、branch `main`、Status `Ready`、Environment `Production` であることを確認。Production Aliasの `worker/rewards.html` では報酬・精算詳細が準備中である旨の文言、`GET /api/bookings?status=COMPLETED...` 200、status系 200、`me` 200、`unread-count` 200、WebSocket 101、Socket.io接続成功を確認。`/api/payments?limit=100`、Network 500、CORSエラー、Console重大エラーは発生なし。スクショ内のuserId風の値は本文に記録しない | Stripe Dashboard、外部監視・通知、admin主要画面、停止UI確認は継続 |
 | 2026-07-01 | 谷口 梓 / Cursor | Vercel Production Alias | admin主要画面 | 要確認あり | `Screenshots/2026_07_01_admin/`（証跡用、Git管理対象外） | login / users / workers / bookings / payments / support は表示OK。paymentsはStripe本番有効化前でも準備中・Stripe DashboardまたはCSV確認の案内があり、誤認防止はOK。ただし本番決済可否はStripe本番有効化が社長確認待ちのためOK扱いしない。dashboard と worker-test-submissions は `/api/admin/worker-test-submissions...` が404、settingsは `/api/auth/me` と `/api/notifications/unread-count` が429のためOK扱いしない。WebSocket初回失敗/再接続ログは一部画面で見えるが、他画面で101/接続成功も確認できるため要観察 | worker-test-submissions APIの本番Backend反映、settingsの時間を置いた429再確認、admin settings / 停止UI / Stripe本番有効化確認を継続 |
+| 2026-07-02 | 谷口 梓 | Railway Production / Vercel Production Alias | Backend A案本番反映とadmin再確認 | OK | `Screenshots/`（証跡用、Git管理対象外） | Backend mainを `origin/main` へpush後、Railway Production Auto Deployが実行。最新Deployment `docs: admin設定画面の再確認結果を記録` がsuccessful / Active。Deploy Logsで `npm run prisma:migrate:deploy`、`prisma migrate deploy`、`15 migrations found in prisma/migrations`、`No pending migrations to apply.`、`node src/index.js`、環境変数バリデーション完了を確認。`/api/health` は200相当で `status: OK`、`/api/public/status` は200相当で `mode/currentMode: normal`, `isNormal: true`。admin dashboard と admin worker-test-submissions は表示OK、`worker-test-submissions?...` が200、提出一覧は全0件で「対象の提出はありません」表示。Console重大エラー、Network 500 / CORSエラーなし、Socket.io接続成功 | Stripe本番有効化と通知基盤 / Slack継続判断は継続確認 |
 
 ### Railway 確認
 
 | 確認項目 | 結果 | スクリーンショット保存先 | メモ | 次対応 |
 |----------|------|--------------------------|------|--------|
-| 最新Backend commitがProductionに反映されている | OK | `Screenshots/エビデンス_railway_backend-deployment-2026-06-22.png` | commit / deployment id `1b08f8aa`、commit message `fix: add restore drill diagnostics` を確認 | 可能なら次回確認時に完全なcommit SHAも記録 |
+| 最新Backend commitがProductionに反映されている | OK | `Screenshots/エビデンス_railway_backend-deployment-2026-06-22.png`, `Screenshots/`（証跡用、Git管理対象外） | 2026-06-22はcommit / deployment id `1b08f8aa`、commit message `fix: add restore drill diagnostics` を確認。2026-07-02にBackend main push後、Railway最新Deployment `docs: admin設定画面の再確認結果を記録` がProductionでsuccessful / Activeとなったことを確認 | なし |
 | DeploymentがActiveである | OK | `Screenshots/エビデンス_railway_backend-deployment-2026-06-22.png` | Production `kajishift-backend` の最新Deploymentが `ACTIVE`、`Deployment successful`。本番URL `kajishift-backend-production.up.railway.app`、GitHub連携、Node `22.22.3`、Region `Southeast Asia`、`1 Replica` を確認 | なし |
 | build logで `prisma generate` が成功している | 未確認 | `Screenshots/エビデンス_railway2026-06-25_railway_build_logs.png` | Build Logsは `No build logs` 表示。Railwayログ上では `prisma generate` 未確認 | 既存証跡で補完し、次回再デプロイ時にRailwayログを保存 |
-| build/deploy logで `prisma migrate deploy` 成功、または実行方針確認済み | 未確認（補完あり） | `Screenshots/エビデンス_railway2026-06-25_railway_view_logs_empty.png`, `Screenshots/エビデンス_railway2026-06-25_postgres_database.png` | Deploy Logsは `No logs in this time range`、Build Logsは `No build logs`。Railwayログ上では未確認。DB上の `_prisma_migrations` と主要テーブル存在確認、既存migration status証跡で補完 | 次回再デプロイ時にRailwayログを保存 |
+| build/deploy logで `prisma migrate deploy` 成功、または実行方針確認済み | OK | `Screenshots/エビデンス_railway2026-06-25_railway_view_logs_empty.png`, `Screenshots/エビデンス_railway2026-06-25_postgres_database.png`, `Screenshots/`（証跡用、Git管理対象外） | 2026-06-25時点ではRailwayログ上未確認だったが、2026-07-02のBackend A案反映でDeploy Logsに `npm run prisma:migrate:deploy` と `prisma migrate deploy` の実行を確認。`15 migrations found in prisma/migrations`、`No pending migrations to apply.` を確認 | なし |
 | `DATABASE_URL` が本番DB向きであることを目視確認 | OK | `Screenshots/エビデンス_railway2026-06-25_railway_variables.png` | Service Variablesに設定あり。人間が本番DB向きであることを目視確認済み。値は記録しない | なし |
 | 必要に応じて `DIRECT_URL` を確認 | 設定なし / 対象外候補 | `Screenshots/エビデンス_railway2026-06-25_railway_variables.png` | Variables画面には表示なし。現構成で必要かはPrisma設定とDB接続方式で必要に応じて確認 | 必要性が出た場合のみ再確認 |
 | CORS / operation mode / backup / Stripe系envを目視確認 | OK（一部補完確認） | `Screenshots/エビデンス_railway2026-06-25_railway_variables.png` | `CORS_ORIGIN`, `ENABLE_STRIPE_PAYMENTS`, `JWT_SECRET`, `NODE_ENV`, `PORT`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` の設定を確認。`OPERATION_MODE` とbackup関連envはVariables上になし。operationはDB永続モードと `/api/public/status`、backupはRunbookの手動 `pg_dump` / restore drill運用で補完 | operation statusとbackup運用は別証跡で継続確認 |
@@ -247,10 +248,10 @@ admin主要画面確認詳細:
 | 対象 | URL | 結果 | 確認内容 | 補足 / 後続確認 |
 |------|-----|------|----------|----------------|
 | adminログイン | `https://kajishift-frontend.vercel.app/admin/login.html` | OK | 画面表示OK。`/api/public/status` 200、主要静的ファイル200。重大Consoleエラーなし | 公開管理者登録導線は見えない。ログイン情報や個人情報の実値は記録しない |
-| adminダッシュボード | `https://kajishift-frontend.vercel.app/admin/dashboard.html` | 要確認 | 画面自体は表示OK。KPI、今日の予約、未対応問い合わせ、売上推移準備中表示、ワーカー審査待ちは表示される | `GET /api/admin/worker-test-submissions?status=needs_review%2Cai_reviewed%2Ctest_submitted&limit=5` が404。画面上も「テスト審査待ちの読み込みに失敗しました」と表示されるためOK扱いしない |
+| adminダッシュボード | `https://kajishift-frontend.vercel.app/admin/dashboard.html` | OK | Backend A案本番反映後に再確認。画面表示OK、`worker-test-submissions?...` が200。「ワーカーテスト審査待ちの読み込みに失敗しました」は出ていない。Console重大エラー、Network 500 / CORSエラーなし、Socket.io接続成功 | 2026-07-01時点の `/api/admin/worker-test-submissions...` 404は解消 |
 | admin利用者管理 | `https://kajishift-frontend.vercel.app/admin/users.html` | OK | 画面表示OK。`me`、`users?...`、status、`unread-count` が200。500/CORSなし | CSV/Excel、停止などの書き込み・出力操作は実施していない。個人情報の実値は本文に記録しない |
 | adminワーカー管理 | `https://kajishift-frontend.vercel.app/admin/workers.html` | OK | 画面表示OK。`workers?...`、status、`unread-count` が200。500/CORSなし | 停止・承認などの書き込み操作は実施していない。個人情報の実値は本文に記録しない |
-| adminワーカーテスト審査 | `https://kajishift-frontend.vercel.app/admin/worker-test-submissions.html` | NG候補 / 要確認 | 画面自体は表示されるが、提出一覧の読み込みに失敗 | `GET /api/admin/worker-test-submissions?page=1&limit=20&status=needs_review%2Cai_reviewed%2Ctest_submitted` が404。7月7日本番リリース範囲に含める場合は要修正。範囲外にする場合は準備中扱い・導線非表示候補 |
+| adminワーカーテスト審査 | `https://kajishift-frontend.vercel.app/admin/worker-test-submissions.html` | OK | Backend A案本番反映後に再確認。画面表示OK、`worker-test-submissions?...` が200。提出一覧は全0件で「対象の提出はありません」表示。Console重大エラー、Network 500 / CORSエラーなし | 2026-07-01時点の `/api/admin/worker-test-submissions...` 404は解消 |
 | admin予約管理 | `https://kajishift-frontend.vercel.app/admin/bookings.html` | OK | 画面表示OK。各statusの `bookings?...` が200。500/CORSなし | 予約詳細・キャンセルなどの書き込み操作は実施していない。予約内容、住所、氏名等の実値は本文に記録しない |
 | admin決済・売上 | `https://kajishift-frontend.vercel.app/admin/payments.html` | OK（決済可否は未確認） | 画面表示OK。Stripe本番有効化前として「決済一覧・売上KPI・報酬精算・キャンセル料管理は準備中」「実運用の決済確認はStripe DashboardまたはCSV」と明記されており、誤認防止としてはOK。500/CORSなし | Stripe本番有効化は社長確認待ちのため、本番決済可否はOK扱いしない。Stripe操作、Webhook再送、PaymentIntent作成、実決済は未実施 |
 | admin問い合わせ | `https://kajishift-frontend.vercel.app/admin/support.html` | OK | 画面表示OK。`support?limit=1000` が200。固定サンプル削除・実データAPI読み込みの説明あり。500/CORSなし | 対応する、削除、CSVなどの書き込み・出力操作は実施していない。問い合わせ内容や個人情報の実値は本文に記録しない |
@@ -259,10 +260,10 @@ admin主要画面確認詳細:
 admin主要画面の総合判定:
 
 - 大半のadmin画面は表示OK、主要GET 200、500/CORSなし。
-- `admin/dashboard.html` と `admin/worker-test-submissions.html` は worker-test-submissions API 404 があるためOK扱いしない。
+- `admin/dashboard.html` と `admin/worker-test-submissions.html` は2026-07-02のBackend A案本番反映後に再確認し、worker-test-submissions API 404が解消したためOK扱いとする。
 - `admin/settings.html` は2026-07-02再確認で429 / 500 / CORSエラーなし、主要API 200、Console重大エラーなしを確認したためOK扱いとする。
 - WebSocketは一部スクショで初回接続失敗/再接続ログが見えるが、他画面では101や接続成功も見えるため、重大NGではなく要観察とする。
-- admin主要画面全体は **要確認あり**。全体OKとはしない。
+- admin主要画面全体は **OK（一部継続確認あり）**。Stripe本番有効化と通知基盤 / Slack継続判断は別途継続確認とする。
 
 admin要確認項目の原因調査:
 
@@ -272,14 +273,14 @@ admin要確認項目の原因調査:
 | Frontend worker-test-submissionsの呼び出し箇所 | `js/admin-worker-test-submissions.js` が `api.getAdminWorkerTestSubmissions(params)` を呼ぶ |
 | Frontend APIパス | `js/api.js` の `getAdminWorkerTestSubmissions()` は `/admin/worker-test-submissions` を生成する。API base URL配下では `/api/admin/worker-test-submissions...` になる |
 | Backend現行ローカルコード | ローカルBackend現行コードには `src/routes/admin.js` の `router.get('/worker-test-submissions', ...)` と controller 実装が存在する |
-| Backend `origin/main` / 本番との差分 | `git diff origin/main...HEAD` 上、worker-test-submissionsのadmin routes/controllerと `/api/workers/me/screening-test` マウントはローカルHEAD側にのみ存在する。`origin/main` には含まれていない |
-| 404の分類 | Frontend本番は worker-test-submissions APIを呼ぶが、本番Backendには該当APIが未反映のため、APIパス不一致ではなく **Backend未デプロイ / Frontend-Backend反映差分** と判断する |
-| リリース範囲の扱い | ワーカーテスト審査を7月7日本番リリース範囲に含めるならBackend反映と再確認が必須。範囲外にするなら、dashboardの該当カードと `worker-test-submissions.html` 導線を準備中扱いまたは非表示にするのが最小安全策 |
+| Backend `origin/main` / 本番との差分 | 2026-07-01時点では `git diff origin/main...HEAD` 上、worker-test-submissionsのadmin routes/controllerと `/api/workers/me/screening-test` マウントはローカルHEAD側にのみ存在していた。2026-07-02にBackend mainをpushし、Railway ProductionへA案として反映済み |
+| 404の分類 | 2026-07-01時点ではFrontend本番が worker-test-submissions APIを呼ぶ一方で本番Backendに該当APIが未反映だったため、APIパス不一致ではなく **Backend未デプロイ / Frontend-Backend反映差分** と判断した。2026-07-02の本番反映後、`worker-test-submissions?...` は200となり404は解消 |
+| リリース範囲の扱い | ワーカーテスト審査はA案として7月7日本番リリース範囲に含める。Backend A案本番反映後、admin dashboard と admin worker-test-submissions の読み取り確認はOK |
 | settings 429の再確認 | 2026-07-02に時間を置いて再確認したところ、`/api/auth/me`、`/api/notifications/unread-count`、services / areas / status系API、Preflightはいずれも200。429 / 500 / CORSエラー、Console重大エラーはなし。Socket.io接続成功 |
 | settings 429の分類 | 前回の429は短時間に多数admin画面を連続確認したことによる一時的なrate limit扱いとする。settings固有の不具合としては扱わない |
 | 通常利用への影響 | 今回の再確認では通常表示に支障なし。ただし管理者が短時間に多数画面を開く、DevToolsでDisable cache確認する、複数タブで管理画面を操作する場合は429が再発する可能性があるため、管理者運用では注意 |
-| 最小修正案 | 実装する場合は、worker-test-submissions APIをBackend mainへ反映してRailwayへデプロイする、またはFrontendでワーカーテスト審査を準備中/非表示にする。429は管理画面のポーリング/API呼び出し削減、`/api/public/status`や通知取得の間隔調整、管理画面向けrate limit設計の見直しが候補 |
-| 今回の扱い | 本確認では実装修正、DB操作、外部サービス設定変更は実施していない。settings 429は再確認で解消扱い。worker-test-submissions 404は未解消の要確認項目として残す |
+| 最小修正案 | worker-test-submissions APIをBackend mainへ反映するA案を採用し、2026-07-02に本番反映済み。429は管理画面のポーリング/API呼び出し削減、`/api/public/status`や通知取得の間隔調整、管理画面向けrate limit設計の見直しが将来候補 |
+| 今回の扱い | Backend A案本番反映後の確認で、settings 429とworker-test-submissions 404はいずれも解消扱い。Stripe本番有効化と通知基盤 / Slack継続判断は継続確認 |
 
 ### DBバックアップ運用確認
 
@@ -295,12 +296,12 @@ admin要確認項目の原因調査:
 
 | 項目 | 状態 | ブロッカー | 次対応 | 参照先 |
 |------|------|------------|--------|--------|
-| Railway証跡 | OK（一部未確認あり） | No | Build/Deploy logs、`prisma generate`、Railwayログ上の `prisma migrate deploy` は次回deploy logで補完 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| Railway証跡 | OK（一部未確認あり） | No | 2026-07-02のBackend A案反映でRailway最新Deployment successful / Active、`prisma migrate deploy` 実行、API起動、health/status正常を確認。`prisma generate` の明示ログ確認は必要に応じて継続 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | Vercel証跡 | OK（一部warningあり） | No | 2026-07-01にFrontend Production `0fe8f7d` 反映を確認。`builds` warningと個別Deployment URLのCORSは補足扱い。Production Alias基準では画面表示、API接続、CORS、operation status取得が正常 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | GitHub Actions / Backup | OK（一部未確認あり） | No | 最新run `#34` はbackup / weekly restore drillともsuccess、artifact 7日保持も確認済み。Node.js 20 warning有無はDashboardログ本文で追加確認 | 本ファイル、GitHub Actions |
 | Stripe | 未確認 | No | Webhook/通知/再送確認 | 本ファイル、Stripe Dashboard |
 | 外部監視・通知 | 未確認 | No | 監視設定とテスト通知を確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
-| 本番主要画面 / 停止UI | 要確認あり | No（adminに未解消要確認あり） | customer主要画面は重大NGなし。worker rewardsは2026-07-01再確認で `/api/payments?limit=100` 500と読み込み中残りが再現しないことを確認。admin settingsは2026-07-02再確認で429が再現せずOK。admin主要画面は大半が表示OKだが、worker-test-submissions API 404があるため全体OKとはしない。`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| 本番主要画面 / 停止UI | OK（一部継続確認あり） | No | customer主要画面は重大NGなし。worker rewardsは2026-07-01再確認で `/api/payments?limit=100` 500と読み込み中残りが再現しないことを確認。admin settingsは2026-07-02再確認で429が再現せずOK。Backend A案反映後、admin dashboard / worker-test-submissions の404も解消。`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | DBバックアップ運用 | 継続（一部OK） | No | Railway管理バックアップは未使用。GitHub Actionsで日次backup、週次restore drill、artifact 7日保持を確認。責任者は未確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
 
 ## 2026-06-03 テスト結果
