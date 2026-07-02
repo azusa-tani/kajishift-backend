@@ -254,13 +254,13 @@ admin主要画面確認詳細:
 | admin予約管理 | `https://kajishift-frontend.vercel.app/admin/bookings.html` | OK | 画面表示OK。各statusの `bookings?...` が200。500/CORSなし | 予約詳細・キャンセルなどの書き込み操作は実施していない。予約内容、住所、氏名等の実値は本文に記録しない |
 | admin決済・売上 | `https://kajishift-frontend.vercel.app/admin/payments.html` | OK（決済可否は未確認） | 画面表示OK。Stripe本番有効化前として「決済一覧・売上KPI・報酬精算・キャンセル料管理は準備中」「実運用の決済確認はStripe DashboardまたはCSV」と明記されており、誤認防止としてはOK。500/CORSなし | Stripe本番有効化は社長確認待ちのため、本番決済可否はOK扱いしない。Stripe操作、Webhook再送、PaymentIntent作成、実決済は未実施 |
 | admin問い合わせ | `https://kajishift-frontend.vercel.app/admin/support.html` | OK | 画面表示OK。`support?limit=1000` が200。固定サンプル削除・実データAPI読み込みの説明あり。500/CORSなし | 対応する、削除、CSVなどの書き込み・出力操作は実施していない。問い合わせ内容や個人情報の実値は本文に記録しない |
-| admin設定 | `https://kajishift-frontend.vercel.app/admin/settings.html` | 要確認 | 画面表示自体はOK。システム設定・操作ログは準備中表示で、未連携UI誤認防止はOKに見える | DevToolsで `/api/auth/me` と `/api/notifications/unread-count` が429。短時間に多数画面を確認した影響の可能性があるが、このスクショ単体ではOK扱いしない。時間を置いて再確認する |
+| admin設定 | `https://kajishift-frontend.vercel.app/admin/settings.html` | OK | 2026-07-02に時間を置いて再確認。`/api/auth/me`、`/api/notifications/unread-count`、services / areas / status系API、Preflightはいずれも200。429 / 500 / CORSエラーなし、Console重大エラーなし、Socket.io接続成功。サービスメニュー、対応エリア、システム設定、操作ログの各タブ表示を確認 | 前回の429は短時間の連続確認による一時的なrate limit扱いとする。β版として編集機能・操作ログが準備中表示になっている点はOK |
 
 admin主要画面の総合判定:
 
 - 大半のadmin画面は表示OK、主要GET 200、500/CORSなし。
 - `admin/dashboard.html` と `admin/worker-test-submissions.html` は worker-test-submissions API 404 があるためOK扱いしない。
-- `admin/settings.html` は429が出ているため、画面表示はOKだが再確認待ちとする。
+- `admin/settings.html` は2026-07-02再確認で429 / 500 / CORSエラーなし、主要API 200、Console重大エラーなしを確認したためOK扱いとする。
 - WebSocketは一部スクショで初回接続失敗/再接続ログが見えるが、他画面では101や接続成功も見えるため、重大NGではなく要観察とする。
 - admin主要画面全体は **要確認あり**。全体OKとはしない。
 
@@ -275,11 +275,11 @@ admin要確認項目の原因調査:
 | Backend `origin/main` / 本番との差分 | `git diff origin/main...HEAD` 上、worker-test-submissionsのadmin routes/controllerと `/api/workers/me/screening-test` マウントはローカルHEAD側にのみ存在する。`origin/main` には含まれていない |
 | 404の分類 | Frontend本番は worker-test-submissions APIを呼ぶが、本番Backendには該当APIが未反映のため、APIパス不一致ではなく **Backend未デプロイ / Frontend-Backend反映差分** と判断する |
 | リリース範囲の扱い | ワーカーテスト審査を7月7日本番リリース範囲に含めるならBackend反映と再確認が必須。範囲外にするなら、dashboardの該当カードと `worker-test-submissions.html` 導線を準備中扱いまたは非表示にするのが最小安全策 |
-| settings 429の原因候補 | `src/index.js` で `/api` 全体に `generalLimiter` が適用され、本番既定は15分100件。複数admin画面を短時間に連続確認し、各画面でstatus / me / unread-count /一覧APIが並列発火したためrate limitに達した可能性が高い |
-| settings固有問題か | スクショではsettings表示時に `/api/auth/me` と `/api/notifications/unread-count` が429。users/workers/bookings/payments/supportでは同系APIが200のため、現時点ではsettings固有の実装不具合より、短時間連続確認によるrate limitの可能性を優先する |
-| 通常利用への影響 | 管理者が短時間に多数画面を開く、DevToolsでDisable cache確認する、複数タブで管理画面を操作する場合に429が発生し、認証確認・通知件数取得・一部データ読み込みが一時失敗する可能性がある。一般利用者向けの通常操作では再現可能性は低いが、管理者運用では注意 |
+| settings 429の再確認 | 2026-07-02に時間を置いて再確認したところ、`/api/auth/me`、`/api/notifications/unread-count`、services / areas / status系API、Preflightはいずれも200。429 / 500 / CORSエラー、Console重大エラーはなし。Socket.io接続成功 |
+| settings 429の分類 | 前回の429は短時間に多数admin画面を連続確認したことによる一時的なrate limit扱いとする。settings固有の不具合としては扱わない |
+| 通常利用への影響 | 今回の再確認では通常表示に支障なし。ただし管理者が短時間に多数画面を開く、DevToolsでDisable cache確認する、複数タブで管理画面を操作する場合は429が再発する可能性があるため、管理者運用では注意 |
 | 最小修正案 | 実装する場合は、worker-test-submissions APIをBackend mainへ反映してRailwayへデプロイする、またはFrontendでワーカーテスト審査を準備中/非表示にする。429は管理画面のポーリング/API呼び出し削減、`/api/public/status`や通知取得の間隔調整、管理画面向けrate limit設計の見直しが候補 |
-| 今回の扱い | 本確認では実装修正、DB操作、外部サービス設定変更は実施していない。worker-test-submissions 404とsettings 429は未解消の要確認項目として残す |
+| 今回の扱い | 本確認では実装修正、DB操作、外部サービス設定変更は実施していない。settings 429は再確認で解消扱い。worker-test-submissions 404は未解消の要確認項目として残す |
 
 ### DBバックアップ運用確認
 
@@ -300,7 +300,7 @@ admin要確認項目の原因調査:
 | GitHub Actions / Backup | OK（一部未確認あり） | No | 最新run `#34` はbackup / weekly restore drillともsuccess、artifact 7日保持も確認済み。Node.js 20 warning有無はDashboardログ本文で追加確認 | 本ファイル、GitHub Actions |
 | Stripe | 未確認 | No | Webhook/通知/再送確認 | 本ファイル、Stripe Dashboard |
 | 外部監視・通知 | 未確認 | No | 監視設定とテスト通知を確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
-| 本番主要画面 / 停止UI | 要確認あり | No（adminに未解消要確認あり） | customer主要画面は重大NGなし。worker rewardsは2026-07-01再確認で `/api/payments?limit=100` 500と読み込み中残りが再現しないことを確認。admin主要画面は大半が表示OKだが、worker-test-submissions API 404とsettings 429があるため全体OKとはしない。`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| 本番主要画面 / 停止UI | 要確認あり | No（adminに未解消要確認あり） | customer主要画面は重大NGなし。worker rewardsは2026-07-01再確認で `/api/payments?limit=100` 500と読み込み中残りが再現しないことを確認。admin settingsは2026-07-02再確認で429が再現せずOK。admin主要画面は大半が表示OKだが、worker-test-submissions API 404があるため全体OKとはしない。`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | DBバックアップ運用 | 継続（一部OK） | No | Railway管理バックアップは未使用。GitHub Actionsで日次backup、週次restore drill、artifact 7日保持を確認。責任者は未確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
 
 ## 2026-06-03 テスト結果
