@@ -29,6 +29,25 @@
 - A案「本番決済なし限定公開」としてOK。
 - Stripe本番決済・本番Webhook確認は未実施。B案移行前の必須残タスクとして残す。
 
+## 2026-07-03 問い合わせ導線 本番URL確認
+
+7月7日 A案「本番決済なし限定公開」の観点で、問い合わせ受付導線をProduction Aliasで確認済み。証跡上、個人名、メールアドレス、問い合わせ本文、問い合わせID、userId風の値、住所、予約ID、APIキー、Secret、DB接続文字列、決済情報の実値は記録しない。
+
+| 画面 | 判定 | 確認結果 |
+|------|------|----------|
+| `https://kajishift-frontend.vercel.app/customer/support.html` | OK | 依頼者ログイン後、問い合わせフォームが正常表示。件名、問い合わせ種別、返信先メールアドレス、本文を入力でき、テスト問い合わせを1件送信。送信後に受付完了メッセージを確認。`POST /api/support` は201、`/api/auth/me`, `/api/public/status`, `/api/notifications/unread-count` は確認範囲で200 |
+| `https://kajishift-frontend.vercel.app/worker/support.html` | OK | ワーカーログイン後、問い合わせフォームが正常表示。件名、問い合わせ種別、返信先メールアドレス、本文を入力でき、テスト問い合わせを1件送信。送信後に受付完了メッセージを確認。`POST /api/support` は201、`/api/public/status` 系は確認範囲で200 |
+| `https://kajishift-frontend.vercel.app/admin/dashboard.html` | OK | customer/worker側から送信したテスト問い合わせが「未対応の問い合わせ」に表示されたことを確認。「すべて見る」導線から問い合わせ管理へ進める状態を確認。「対応する」ボタンはDB更新を伴う可能性があるため未押下 |
+| `https://kajishift-frontend.vercel.app/admin/support.html` | OK | 問い合わせ一覧が正常表示され、customer/worker側から送信したテスト問い合わせを確認。問い合わせステータス「新規」、アサイン「未アサイン」を確認。`対応する`, `自分にアサイン`, `対応開始`, `削除` はDB更新・削除を伴う可能性があるため未押下。`GET /api/support?limit=1000`, `/api/auth/me`, `/api/public/status`, `/api/notifications/unread-count` は確認範囲で200 |
+
+共通結果:
+
+- Console重大エラーなし。
+- 継続的な 500 / 404 / 429 / CORS なし。
+- 本番決済、返金、カード登録、正式有料予約受付への導線なし。
+- A案「本番決済なし限定公開」として問い合わせ受付導線はOK。
+- Stripe本番決済・本番Webhook確認は未実施。B案移行前の必須残タスクとして残す。
+
 判定区分:
 
 | 判定 | 意味 |

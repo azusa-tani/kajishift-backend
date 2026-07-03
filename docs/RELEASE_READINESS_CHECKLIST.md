@@ -72,6 +72,7 @@
 | admin settingsで未連携フォーム・固定操作ログを表示しない | OK | Frontend `0fe8f7d`。サービスメニュー/対応エリアは実API連携として維持 |
 | customer決済画面で本番カード登録導線を表示しない | OK | 2026-07-03にProduction Aliasの `customer/payment.html` で「カード登録は準備中」のdisabled表示、カード追加ボタン/カード入力モーダル/カード番号入力欄/カード名義人入力欄/追加ボタンなしを確認 |
 | 決済関連画面がA案向けに誤認防止されている | OK | 2026-07-03に `customer/payment.html`, `worker/rewards.html`, `admin/payments.html` を本番URLで確認。3画面とも本番決済、本番カード登録、正式な有料予約受付につながる導線なし。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし |
+| 問い合わせ受付導線が本番URLで利用できる | OK | 2026-07-03に `customer/support.html`, `worker/support.html` でテスト問い合わせを各1件送信し、`admin/dashboard.html`, `admin/support.html` で受付確認。管理側の更新・削除ボタンはDB更新を伴う可能性があるため未押下。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし |
 
 ## β版で準備中または公開後対応とする画面機能
 
@@ -91,7 +92,7 @@
 |------|------|------|
 | 本番主要画面の実ブラウザ確認 | 要確認 | customer/worker/admin主要画面、Console/Network重大エラーなしのスクリーンショット |
 | 決済関連画面の誤認防止確認 | OK | 2026-07-03に `customer/payment.html`, `worker/rewards.html`, `admin/payments.html` を本番URLで確認済み。本番決済、本番カード登録、正式な有料予約受付につながる導線なし |
-| 問い合わせ・事前登録・β利用希望受付 | 7月7日前必須 | `customer/register.html`, `worker/register.html`, `admin/support.html` などの導線確認 |
+| 問い合わせ・事前登録・β利用希望受付 | 一部OK / 継続 | 問い合わせ受付導線は2026-07-03に本番URLでOK。customer/workerの事前登録、workerのβ利用希望/審査テスト導線は別途実ブラウザ確認を継続 |
 | Stripe Webhook署名検証と同一イベント再送 | B案前必須 | Stripe Dashboard/CLI、Railwayログ、DB `stripe_events` |
 | Staging本番相当決済E2E | B案前必須 | 予約作成、PaymentIntent、決済成功、Webhook、領収書DL |
 | Stripe本番Webhook・本番決済確認 | B案前必須 | Live ModeのWebhook delivery 2xx、署名検証、本番決済/失敗/反映確認 |
