@@ -1,11 +1,13 @@
 # KAJISHIFT β公開前 最終チェックリスト
 
-最終更新: 2026-06-17
+最終更新: 2026-07-03
 
 ## 前提判定
 
-- 現時点の実確認後判定: **Go**
-- 条件: **24h自動停止ガードあり。本番最新デプロイ反映、本番読み取り系、GitHub Actions日次バックアップ/復元ドリルはPASS**
+- 現時点の実確認後判定: **2026-07-07 A案Go候補**
+- 条件: **本番決済なし限定公開**。Stripe本番決済、正式な有料予約受付、本番カード登録、本番課金につながる導線は公開範囲に含めない。
+- Stripe本番決済あり運用は、管理画面アクセス制限、管理者MFA/2FA、管理者ログイン失敗時アカウントロック、脆弱性診断証跡、Stripe本番Webhook/本番決済確認が完了した後に別Go/No-Goで判断する。
+- 24h自動停止ガード、本番最新デプロイ反映、本番読み取り系、GitHub Actions日次バックアップ/復元ドリルは既存証跡上PASS。
 - 本番での予約作成、PaymentIntent作成、領収書DLの再実行は、本番データ保護のため行わない。
 - 本番書き込みを伴う追加E2EはStagingで実施する。
 
@@ -221,13 +223,15 @@
 
 | チェック | 確認方法 | 期待結果 | 証跡ファイル/ログの保存先 | 判定 |
 |----------|----------|----------|----------------------------|------|
-| [x] Stripe Webhook直近イベントが `processed` | DB `stripe_events` 直近レコードを確認 | 直近 `payment_intent.succeeded` が `processed` | `docs/BETA_EXECUTION_RESULT.md` | OK |
-| [x] Stripe Webhook failed件数が0 | DB `stripe_events` のfailed件数を確認 | `failedStripeEvents=0` | `docs/BETA_EXECUTION_RESULT.md` | OK |
+| [x] Stripe Test Mode Webhook直近イベントが `processed` | DB `stripe_events` 直近レコードを確認 | Test Modeの `payment_intent.succeeded` が `processed` | `docs/BETA_EXECUTION_RESULT.md` | 既存証跡 |
+| [x] Stripe Test Mode Webhook failed件数が0 | DB `stripe_events` のfailed件数を確認 | `failedStripeEvents=0` | `docs/BETA_EXECUTION_RESULT.md` | 既存証跡 |
 | [ ] Webhook署名検証が有効 | `STRIPE_WEBHOOK_SECRET` とWebhook controllerの署名検証ログを確認 | 署名なし/不正署名が拒否される | Railway Variables確認メモ、Stripe Dashboard | 要確認 |
 | [x] 決済異常時に `payment_paused` へ遷移できる | 検証DBで疑似 `payment_reconciliation_anomaly` を作成 | `auto:payment_anomaly_threshold` で `payment_paused` | `docs/BETA_EXECUTION_RESULT.md` | OK |
 | [x] `payment_paused` で予約/決済/カード操作が抑止される | 検証DBのcapabilityと静的ガードテストを確認 | `createBooking`, `createPaymentIntent`, `cardWrite` が停止 | `npm run test:ops-guard`、`docs/E2E_EDGE_CASE_MATRIX.md` | OK |
-| [ ] 同一イベント再送時の冪等性 | Stripe DashboardまたはStripe CLIで同一eventを再送 | 重複処理されず、既存 `stripe_events` とPayment状態が壊れない | Stripe Dashboard delivery log、API log | 継続 |
-| [ ] Stagingで本番相当決済E2Eを実施 | Stagingで予約、PaymentIntent、決済成功、Webhook、領収書DLを通す | 本番データを汚さず決済全体を再確認 | Staging E2Eログ | 継続 |
+| [ ] Stripe Live Mode Webhook確認 | B案移行前にLive endpoint、署名検証、delivery 2xxを確認 | Live Mode webhookが署名検証付きで受信される | Stripe Dashboard delivery log、Railway log、DB `stripe_events` | B案前必須 |
+| [ ] Stripe Live Mode本番決済確認 | B案移行前に限定テストで本番決済、失敗、Webhook反映、領収書を確認 | 正式開放前にLive決済全体の証跡がある | Stripe Dashboard、API log、画面スクリーンショット | B案前必須 |
+| [ ] 同一イベント再送時の冪等性 | Stripe DashboardまたはStripe CLIで同一eventを再送 | 重複処理されず、既存 `stripe_events` とPayment状態が壊れない | Stripe Dashboard delivery log、API log | B案前必須 |
+| [ ] Stagingで本番相当決済E2Eを実施 | Stagingで予約、PaymentIntent、決済成功、Webhook、領収書DLを通す | 本番データを汚さず決済全体を再確認 | Staging E2Eログ | B案前必須 |
 
 ## 7. 運用モード・停止ガード確認
 
@@ -257,12 +261,12 @@
 
 | 項目 | 内容 |
 |------|------|
-| 判定 | **Go** |
-| 条件 | **24h自動停止ガードあり**。Backend/FrontendともGitHub `main` へpush済み。本番 `/api/public/status` 200 normal、`/api/health.operation` normal、本番 `js/config.js` ops版markerを確認済み。GitHub Actions `Database backup and restore drill #6` はbackup/restore drillともPASS |
-| 未完了項目 | Railway/Vercel Deploymentsのスクリーンショット保存、Railway/Vercel/Stripe/外部監視通知設定のDashboard確認、Stripe同一イベント再送、Staging本番相当E2E |
-| β公開前に必須で潰す項目 | なし。Dashboardスクリーンショット保存と外部監視/通知設定の目視確認は運用証跡として継続 |
-| β公開後に継続対応する項目 | Staging整備、本番相当E2E、Stripe同一イベント再送、週次復元ドリル、バックアップ保管/保持監査、Windows短命Node assertのCI/Linux再確認、Node.js 20 actions deprecated warning対応 |
-| 判断理由 | ローカル実装、検証DBドリル、通知、バックアップ、復元、書き込みガード、停止UI静的テストはPASS。Backend/FrontendをGitHub `main` へpush後、本番API `/api/public/status` と `/api/health.operation`、本番フロント `config.js` ops markerもPASS。さらにGitHub Actions `Database backup and restore drill #6` でbackup job、encrypted artifact作成、weekly restore drillがPASSしたため、β公開前No-Go項目は解消済み |
+| 判定 | **2026-07-07 A案Go候補: 本番決済なし限定公開** |
+| 条件 | Stripe本番決済、正式な有料予約受付、本番カード登録、本番課金につながる導線を未開放にする。Backend/Frontend本番反映、`/api/public/status` normal、`/api/health.operation` normal、GitHub Actions backup/restore drill PASSは既存証跡を参照 |
+| 未完了項目 | 本番決済あり運用に必要な管理画面アクセス制限、管理者MFA/2FA、管理者ログイン失敗時アカウントロック、脆弱性診断/ペネトレーションテスト証跡、Stripe Live Mode Webhook/本番決済確認 |
+| 7月7日公開前に必須で潰す項目 | customer / worker / admin 主要画面の実ブラウザ再確認、決済関連画面の誤認防止確認、問い合わせ・事前登録・β利用希望受付の確認、正式課金導線がないことの確認 |
+| A案後に継続対応する項目 | B案移行計画として、Cloudflare Access等の管理画面保護、`/api/admin/*` 保護、管理者アカウントロック実装、OWASP ZAP / `npm audit` / 管理API認可確認、Stripe本番Webhook/本番決済E2E、Staging整備、週次復元ドリル |
+| 判断理由 | 社長確認により7月7日は本番決済なし限定公開で進行するため、Stripe本番決済のセキュリティ確認4項目は7月7日A案Go条件から切り離し、B案移行前の必須残タスクとして管理する。A案では事前登録、問い合わせ、β利用希望受付、主要画面確認を公開範囲とする |
 
 ## Stagingで実施する本番相当E2E
 
@@ -279,4 +283,4 @@
 
 ## 共有用サマリー
 
-KAJISHIFT β公開前の現時点判定は **Go: 24h自動停止ガードあり** です。暗号化バックアップ、検証DBへの復元ドリル、通知2系統到達、`payment_paused` / `maintenance` 疑似発火、ガード系テスト、フロント停止UI静的テストはPASS済みです。Backend/Frontendとも24h Auto Ops対応をGitHub `main` へpushし、本番 `/api/public/status` が `normal` を返すこと、`/api/health` に `operation` が含まれること、本番 `js/config.js` がops版markerを含むことを確認済みです。GitHub Actions `Database backup and restore drill #6` はStatus `Success`、backup job PASS、encrypted backup artifact `kajishift-db-backup` 61.9 KB作成、weekly restore drill PASSです。Node.js 20 actions deprecated warningはβ公開後の改善項目とし、本番データ保護のため本番での予約作成・PaymentIntent作成・領収書DLの再実行は行わず、既存Productionスモーク証跡を参照します。
+KAJISHIFT の2026-07-07公開方針は **A案Go候補: 本番決済なし限定公開** です。Stripe本番決済、正式な有料予約受付、本番カード登録、本番課金につながる導線は未開放とし、問い合わせ・事前登録・β利用希望受付を中心に公開します。暗号化バックアップ、検証DBへの復元ドリル、通知2系統到達、`payment_paused` / `maintenance` 疑似発火、ガード系テスト、フロント停止UI静的テストはPASS済みです。Stripe本番決済あり運用は、管理画面アクセス制限、管理者MFA/2FA、管理者ログイン失敗時アカウントロック、脆弱性診断証跡、Stripe Live Mode Webhook/本番決済確認が完了した後に、別途B案Go/No-Goとして判断します。
