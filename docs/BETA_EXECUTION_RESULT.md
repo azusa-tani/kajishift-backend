@@ -53,6 +53,7 @@
 | admin問い合わせ固定データ削除 | PASS | Frontend `56a133b`。`admin/support.html` の固定問い合わせ/固定事故履歴/固定ステータスを削除。問い合わせ一覧/詳細/更新/アサイン/削除/CSVは実API連携として維持 |
 | admin dashboardグラフplaceholder整理 | PASS | Frontend `aaecb6c`。KPIカードは実API連携、日別売上推移グラフは準備中と明記 |
 | admin settings未連携UI整理 | PASS | Frontend `0fe8f7d`。未連携メールテンプレート/プッシュ通知/問い合わせ連絡先フォーム、固定操作ログ、未連携CSVボタンを削除。サービスメニュー/対応エリア管理は実API連携として維持 |
+| A案決済関連画面本番URL確認 | PASS | `customer/payment.html`, `worker/rewards.html`, `admin/payments.html` をProduction Aliasで確認。本番決済、本番カード登録、正式な有料予約受付につながる導線なし。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし |
 
 ## 残課題
 
@@ -70,6 +71,7 @@
 | 日別売上推移グラフ | β後対応 | KPIは実API連携済みだが、グラフ表示は準備中として明記済み |
 | メールテンプレート・プッシュ通知・問い合わせ連絡先編集 | β後対応 | `admin/settings.html` の未連携フォームは削除済み。実設定編集API連携は未実装 |
 | 操作ログ検索・CSV出力 | β後対応 | 固定操作ログと未連携CSVボタンは削除済み。実ログ検索/出力は未実装 |
+| Stripe本番決済・本番Webhook確認 | B案前必須 | 2026-07-07 A案では未実施。Live ModeのWebhook delivery、署名検証、本番決済成功/失敗、Webhook反映、領収書確認はB案移行前の残タスク |
 
 ## Go / No-Go
 
@@ -110,6 +112,7 @@ Stripe本番決済あり運用は、以下を完了した後に **B案Go/No-Go**
 | 2026-07-01 | KAJISHIFT運用担当 | Vercel Production / Production Alias | 最新Frontend反映とworker rewards再確認 | OK | `Screenshots/`（証跡用、Git管理対象外） | Vercel Dashboardで `kajishift-frontend` のProduction Deploymentが `fix: clarify unavailable admin settings`、commit `0fe8f7d`、branch `main`、Status `Ready`、Environment `Production` であることを確認。Production Aliasの `worker/rewards.html` では報酬・精算詳細が準備中である旨の文言、`GET /api/bookings?status=COMPLETED...` 200、status系 200、`me` 200、`unread-count` 200、WebSocket 101、Socket.io接続成功を確認。`/api/payments?limit=100`、Network 500、CORSエラー、Console重大エラーは発生なし。スクショ内のuserId風の値は本文に記録しない | Stripe Dashboard、外部監視・通知、admin主要画面、停止UI確認は継続 |
 | 2026-07-01 | KAJISHIFT運用担当 / Cursor | Vercel Production Alias | admin主要画面 | 要確認あり | `Screenshots/2026_07_01_admin/`（証跡用、Git管理対象外） | login / users / workers / bookings / payments / support は表示OK。paymentsはStripe本番有効化前でも準備中・Stripe DashboardまたはCSV確認の案内があり、誤認防止はOK。ただし本番決済可否はStripe本番有効化が社長確認待ちのためOK扱いしない。dashboard と worker-test-submissions は `/api/admin/worker-test-submissions...` が404、settingsは `/api/auth/me` と `/api/notifications/unread-count` が429のためOK扱いしない。WebSocket初回失敗/再接続ログは一部画面で見えるが、他画面で101/接続成功も確認できるため要観察 | worker-test-submissions APIの本番Backend反映、settingsの時間を置いた429再確認、admin settings / 停止UI / Stripe本番有効化確認を継続 |
 | 2026-07-02 | KAJISHIFT運用担当 | Railway Production / Vercel Production Alias | Backend A案本番反映とadmin再確認 | OK | `Screenshots/`（証跡用、Git管理対象外） | Backend mainを `origin/main` へpush後、Railway Production Auto Deployが実行。最新Deployment `docs: admin設定画面の再確認結果を記録` がsuccessful / Active。Deploy Logsで `npm run prisma:migrate:deploy`、`prisma migrate deploy`、`15 migrations found in prisma/migrations`、`No pending migrations to apply.`、`node src/index.js`、環境変数バリデーション完了を確認。`/api/health` は200相当で `status: OK`、`/api/public/status` は200相当で `mode/currentMode: normal`, `isNormal: true`。admin dashboard と admin worker-test-submissions は表示OK、`worker-test-submissions?...` が200、提出一覧は全0件で「対象の提出はありません」表示。Console重大エラー、Network 500 / CORSエラーなし、Socket.io接続成功 | 7月7日は本番決済なし限定公開。Stripe本番決済開放、通知基盤 / Slack継続判断はB案移行前に別途確認 |
+| 2026-07-03 | KAJISHIFT運用担当 | Vercel Production Alias | A案決済関連画面 | OK | `Screenshots/`（証跡用、Git管理対象外） | `customer/payment.html` は「カード登録は準備中」のdisabled表示、カード追加ボタン/カード入力モーダル/カード番号入力欄/カード名義人入力欄/追加ボタンなし。カード登録不可、本番決済・カード登録はセキュリティ対応完了後、問い合わせ・事前登録・β利用希望受付のみ受け付ける旨を表示。`worker/rewards.html` は報酬・精算情報の詳細表示が準備中で、運営から個別案内の趣旨を表示。`admin/payments.html` は決済一覧・売上KPI・報酬精算・キャンセル料管理が実データ連携前、決済状況一覧が準備中、サンプル決済履歴は誤認防止のため非表示と明記。3画面とも本番決済、本番カード登録、正式な有料予約受付、返金・決済確定などの実操作導線なし。主要APIは確認範囲で200、Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし | A案としてOK。Stripe本番決済・本番Webhook確認は未実施のため、B案移行前の必須残タスクとして継続 |
 
 ### Railway 確認
 

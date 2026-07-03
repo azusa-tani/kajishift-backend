@@ -11,6 +11,24 @@
 - 本番での予約作成、PaymentIntent作成、領収書DLの再実行は、本番データ保護のため行わない。
 - 本番書き込みを伴う追加E2EはStagingで実施する。
 
+## 2026-07-03 決済関連画面 本番URL確認
+
+7月7日 A案「本番決済なし限定公開」の観点で、以下3画面をProduction Aliasで確認済み。証跡上、個人名、メールアドレス、住所、userId、APIキー、Secret、DB接続文字列、決済情報の実値は記録しない。
+
+| 画面 | 判定 | 確認結果 |
+|------|------|----------|
+| `https://kajishift-frontend.vercel.app/customer/payment.html` | OK | 「カード登録は準備中」のdisabled表示あり。「カードを追加」ボタン、カード入力モーダル、カード番号入力欄、カード名義人入力欄、「追加する」ボタンなし。カード登録不可、本番決済・カード登録はセキュリティ対応完了後、問い合わせ・事前登録・β利用希望受付のみ受け付ける旨を表示。`/api/auth/me`, `/api/payments?limit=100`, `/api/public/status`, `/api/notifications/unread-count` は確認範囲で200 |
+| `https://kajishift-frontend.vercel.app/worker/rewards.html` | OK | 報酬・精算情報は準備中。β版では詳細表示は準備中、運営から個別案内の趣旨を表示。決済開始導線、カード登録導線なし |
+| `https://kajishift-frontend.vercel.app/admin/payments.html` | OK | 「β版での注意」として、決済一覧・売上KPI・報酬精算・キャンセル料管理は実データ連携前と表示。β運用中の決済確認はStripe DashboardまたはCSV/Excel出力で行う旨、返金・キャンセル料・報酬精算の本格管理は今後対応予定と表示。決済状況一覧は準備中、サンプル決済履歴は実決済と誤認しないよう非表示。本番決済操作、カード登録、返金・決済確定などの実操作導線なし。`/api/auth/me`, `/api/public/status`, `/api/notifications/unread-count` は確認範囲で200 |
+
+共通結果:
+
+- 本番カード登録、本番決済、正式な有料予約受付につながる導線なし。
+- Console重大エラーなし。
+- 継続的な 500 / 404 / 429 / CORS なし。
+- A案「本番決済なし限定公開」としてOK。
+- Stripe本番決済・本番Webhook確認は未実施。B案移行前の必須残タスクとして残す。
+
 判定区分:
 
 | 判定 | 意味 |
