@@ -1,6 +1,6 @@
 # KAJISHIFT β公開 実行結果
 
-最終更新: 2026-06-29
+最終更新: 2026-07-06
 
 ## 実行済み
 
@@ -55,6 +55,7 @@
 | admin settings未連携UI整理 | PASS | Frontend `0fe8f7d`。未連携メールテンプレート/プッシュ通知/問い合わせ連絡先フォーム、固定操作ログ、未連携CSVボタンを削除。サービスメニュー/対応エリア管理は実API連携として維持 |
 | A案決済関連画面本番URL確認 | PASS | `customer/payment.html`, `worker/rewards.html`, `admin/payments.html` をProduction Aliasで確認。本番決済、本番カード登録、正式な有料予約受付につながる導線なし。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし |
 | A案問い合わせ導線本番URL確認 | PASS | `customer/support.html`, `worker/support.html`, `admin/dashboard.html`, `admin/support.html` をProduction Aliasで確認。customer/workerからテスト問い合わせを各1件送信し、管理側で受付内容を確認。DB更新・削除を伴う管理操作は未実施。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし。本番決済・カード登録・正式有料予約受付への導線なし |
+| A案事前登録・β利用希望受付導線確認 | 保留（一部OK） | 公開登録画面は未送信の実ブラウザ確認済み。認証後画面は実ブラウザ確認未実施のため最終判定保留。`worker/screening-test.html`, `admin/users.html`, `admin/workers.html`, `admin/worker-test-submissions.html`, `admin/worker-test-submission-detail.html` と関連JS/APIを静的確認し、対象画面・関連JSに本番決済、カード登録、正式有料予約受付の実行導線は見つからなかった。`/payments/intent`, `/cards/setup-intent`, `/cards`, `/bookings` の書き込み系API呼び出しも対象JSからは見つからなかった |
 
 ## 残課題
 
@@ -73,6 +74,7 @@
 | メールテンプレート・プッシュ通知・問い合わせ連絡先編集 | β後対応 | `admin/settings.html` の未連携フォームは削除済み。実設定編集API連携は未実装 |
 | 操作ログ検索・CSV出力 | β後対応 | 固定操作ログと未連携CSVボタンは削除済み。実ログ検索/出力は未実装 |
 | Stripe本番決済・本番Webhook確認 | B案前必須 | 2026-07-07 A案では未実施。Live ModeのWebhook delivery、署名検証、本番決済成功/失敗、Webhook反映、領収書確認はB案移行前の残タスク |
+| 認証後の事前登録・β利用希望受付導線 実ブラウザ確認 | A案公開前確認 | コードベース静的確認では大きなNGなし。ただし認証後実画面、Console/Network、共通ナビの誤認リスクは未確認。既存テストアカウントを使い、DB更新・送信・出力操作を避けて読み取り確認する |
 
 ## Go / No-Go
 
@@ -115,6 +117,7 @@ Stripe本番決済あり運用は、以下を完了した後に **B案Go/No-Go**
 | 2026-07-02 | KAJISHIFT運用担当 | Railway Production / Vercel Production Alias | Backend A案本番反映とadmin再確認 | OK | `Screenshots/`（証跡用、Git管理対象外） | Backend mainを `origin/main` へpush後、Railway Production Auto Deployが実行。最新Deployment `docs: admin設定画面の再確認結果を記録` がsuccessful / Active。Deploy Logsで `npm run prisma:migrate:deploy`、`prisma migrate deploy`、`15 migrations found in prisma/migrations`、`No pending migrations to apply.`、`node src/index.js`、環境変数バリデーション完了を確認。`/api/health` は200相当で `status: OK`、`/api/public/status` は200相当で `mode/currentMode: normal`, `isNormal: true`。admin dashboard と admin worker-test-submissions は表示OK、`worker-test-submissions?...` が200、提出一覧は全0件で「対象の提出はありません」表示。Console重大エラー、Network 500 / CORSエラーなし、Socket.io接続成功 | 7月7日は本番決済なし限定公開。Stripe本番決済開放、通知基盤 / Slack継続判断はB案移行前に別途確認 |
 | 2026-07-03 | KAJISHIFT運用担当 | Vercel Production Alias | A案決済関連画面 | OK | `Screenshots/`（証跡用、Git管理対象外） | `customer/payment.html` は「カード登録は準備中」のdisabled表示、カード追加ボタン/カード入力モーダル/カード番号入力欄/カード名義人入力欄/追加ボタンなし。カード登録不可、本番決済・カード登録はセキュリティ対応完了後、問い合わせ・事前登録・β利用希望受付のみ受け付ける旨を表示。`worker/rewards.html` は報酬・精算情報の詳細表示が準備中で、運営から個別案内の趣旨を表示。`admin/payments.html` は決済一覧・売上KPI・報酬精算・キャンセル料管理が実データ連携前、決済状況一覧が準備中、サンプル決済履歴は誤認防止のため非表示と明記。3画面とも本番決済、本番カード登録、正式な有料予約受付、返金・決済確定などの実操作導線なし。主要APIは確認範囲で200、Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし | A案としてOK。Stripe本番決済・本番Webhook確認は未実施のため、B案移行前の必須残タスクとして継続 |
 | 2026-07-03 | KAJISHIFT運用担当 | Vercel Production Alias | A案問い合わせ導線 | OK | `Screenshots/`（証跡用、Git管理対象外） | `customer/support.html` と `worker/support.html` はログイン後に問い合わせフォームを正常表示。件名、問い合わせ種別、返信先メールアドレス、本文を入力でき、テスト問い合わせを各1件送信。送信後に受付完了メッセージを確認し、`POST /api/support` は201。`admin/dashboard.html` では送信済み問い合わせが未対応の問い合わせに表示され、「すべて見る」導線から問い合わせ管理へ進める状態を確認。`admin/support.html` では問い合わせ一覧に送信済み問い合わせが表示され、ステータス新規・未アサイン表示を確認。`対応する`, `自分にアサイン`, `対応開始`, `削除` はDB更新・削除を伴う可能性があるため未押下。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし。本番決済、返金、カード登録、正式有料予約受付への導線なし。問い合わせ本文、メール、ID風の値、個人情報、決済情報の実値は本文に記録しない | A案としてOK。Stripe本番決済・本番Webhook確認は未実施のため、B案移行前の必須残タスクとして継続 |
+| 2026-07-06 | KAJISHIFT運用担当 | コードベース静的確認 | A案 事前登録・β利用希望受付導線 | 保留（一部OK） | スクリーンショットなし | 公開登録画面は2026-07-03に未送信の実ブラウザ確認済み。認証後画面は実ブラウザ確認未実施のため、`worker/screening-test.html`, `admin/users.html`, `admin/workers.html`, `admin/worker-test-submissions.html`, `admin/worker-test-submission-detail.html` と関連JS/APIを静的確認。`worker/screening-test.html` はワーカー本人の審査テスト回答/提出状況確認画面、`admin/users.html` は依頼者一覧、`admin/workers.html` はワーカー一覧・審査状態、`admin/worker-test-submissions.html` は審査提出一覧、`admin/worker-test-submission-detail.html` は提出詳細と管理者最終判定画面。対象画面・関連JSに本番決済、カード登録、正式有料予約受付の実行導線は見つからず、`/payments/intent`, `/cards/setup-intent`, `/cards`, `/bookings` の書き込み系API呼び出しも対象JSからは見つからなかった。一方で、審査テスト送信、停止/有効化、新規管理者登録、合格/不合格、CSV/Excel出力は更新・出力系操作として存在するため、本番確認時は押下しない運用が必要。共通ナビに「予約管理」「決済・売上」、ワーカー側に「仕事を探す」「報酬」などの表示があるため、A案期間中の誤認リスクは実ブラウザで確認が必要。静的確認ベースでは大きなNGなし。ただし認証後実ブラウザ確認、Console/Network確認、共通ナビの誤認リスク確認は未実施のため最終判定は保留 | 既存テストアカウントで認証後実ブラウザ読み取り確認を実施。送信、更新、削除、出力、DB作成を伴う操作はしない。個人情報、ID風の値、決済情報、Secret類の実値は記録しない |
 
 ### Railway 確認
 

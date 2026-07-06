@@ -1,6 +1,6 @@
 # KAJISHIFT β公開前 最終チェックリスト
 
-最終更新: 2026-07-03
+最終更新: 2026-07-06
 
 ## 前提判定
 
@@ -47,6 +47,59 @@
 - 本番決済、返金、カード登録、正式有料予約受付への導線なし。
 - A案「本番決済なし限定公開」として問い合わせ受付導線はOK。
 - Stripe本番決済・本番Webhook確認は未実施。B案移行前の必須残タスクとして残す。
+
+## 2026-07-06 事前登録・β利用希望受付導線 静的確認
+
+7月7日 A案「本番決済なし限定公開」の観点で、事前登録・β利用希望受付導線を確認した。公開登録画面は2026-07-03に未送信の実ブラウザ確認済み。認証後画面は実ブラウザ確認未実施のため、今回はコードベースの静的確認として扱い、最終判定は保留する。確認者は `KAJISHIFT運用担当`。個人名、メールアドレス、住所、問い合わせ本文、問い合わせID、userId風の値、予約ID、submissionId、APIキー、Secret、DB接続文字列、決済情報の実値は記録しない。
+
+静的確認対象:
+
+- `worker/screening-test.html`
+- `admin/users.html`
+- `admin/workers.html`
+- `admin/worker-test-submissions.html`
+- `admin/worker-test-submission-detail.html`
+- `js/worker-screening-test.js`
+- `js/admin-worker-test-submissions.js`
+- `js/admin-worker-test-submission-detail.js`
+- `js/api.js`
+- `js/auth.js`
+- `js/worker-notification-badge.js`
+- `src/index.js`
+- `src/routes/admin.js`
+- `src/routes/workerTestSubmissions.js`
+- `src/controllers/adminController.js`
+- `src/controllers/workerTestSubmissionController.js`
+- `src/services/adminService.js`
+- `src/services/workerTestSubmissionService.js`
+
+| 画面 | 役割 | 静的確認結果 |
+|------|------|--------------|
+| `worker/screening-test.html` | ワーカー本人の審査テスト回答、提出状況、提出済み回答の確認 | 本番決済、カード登録、正式有料予約受付の実行導線は見つからない。更新系は「回答を送信する」に紐づく `POST /api/workers/me/screening-test` |
+| `admin/users.html` | 依頼者一覧の読み取り表示 | 本番決済、カード登録、正式有料予約受付の実行導線は見つからない。更新/出力系として停止/有効化、新規管理者登録、CSV/Excel出力が存在 |
+| `admin/workers.html` | ワーカー一覧、本人確認有無、審査状態の読み取り表示 | 本番決済、カード登録、正式有料予約受付の実行導線は見つからない。更新/出力系として停止、CSV/Excel出力が存在 |
+| `admin/worker-test-submissions.html` | ワーカー審査テスト提出一覧の読み取り表示 | 本番決済、カード登録、正式有料予約受付の実行導線は見つからない。詳細リンクは読み取り画面への遷移 |
+| `admin/worker-test-submission-detail.html` | 審査提出詳細、AI一次判定、管理者最終判定の確認 | 本番決済、カード登録、正式有料予約受付の実行導線は見つからない。更新系として「合格にする」「不合格にする」が `POST /api/admin/worker-test-submissions/:id/final-review` に紐づく |
+
+API確認:
+
+- 読み取り系: `GET /api/auth/me`, `GET /api/workers/me/screening-test`, `GET /api/admin/users`, `GET /api/admin/workers`, `GET /api/admin/worker-test-submissions`, `GET /api/admin/worker-test-submissions/:id`, `GET /api/notifications/unread-count`
+- 更新/出力系: `POST /api/workers/me/screening-test`, `PUT /api/admin/users/:id`, `POST /api/admin/register`, `PUT /api/admin/workers/:id`, `POST /api/admin/worker-test-submissions/:id/final-review`, `GET /api/admin/reports/users/export/csv|excel`, `GET /api/admin/reports/workers/export/csv|excel`
+- 対象画面・関連JSから、`/payments/intent`, `/cards/setup-intent`, `/cards`, `/bookings` の書き込み系API呼び出しは見つからなかった。
+
+判定:
+
+- 静的確認ベースでは、A案「本番決済なし限定公開」を止める大きなNGは見つからない。
+- ただし、認証後画面の実ブラウザ確認、Console/Network確認、共通ナビの誤認リスク確認は未実施のため、認証後画面としての最終OK判定は保留。
+- 共通ナビに `予約管理`、`決済・売上`、ワーカー側に `仕事を探す`、`報酬` などの表示があるため、A案期間中に正式予約・決済・報酬精算が利用可能と誤認されないかは実ブラウザで確認する。
+- 本番確認時は、審査テスト送信、停止/有効化、新規管理者登録、合格/不合格、CSV/Excel出力を押下しない運用が必要。
+
+残課題:
+
+- 既存テストアカウントを使った認証後実ブラウザ読み取り確認。
+- 認証後画面のConsole重大エラー、Networkの継続的な 500 / 404 / 429 / CORS 確認。
+- `/payments/intent`, `/cards/setup-intent`, `/cards`, `/bookings` の意図しない書き込み系リクエストが発生しないことの実ブラウザNetwork確認。
+- 共通ナビと画面文言のA案期間中の誤認リスク確認。
 
 判定区分:
 
