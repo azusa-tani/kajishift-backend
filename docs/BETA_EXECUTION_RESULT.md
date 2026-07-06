@@ -56,6 +56,7 @@
 | A案決済関連画面本番URL確認 | PASS | `customer/payment.html`, `worker/rewards.html`, `admin/payments.html` をProduction Aliasで確認。本番決済、本番カード登録、正式な有料予約受付につながる導線なし。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし |
 | A案問い合わせ導線本番URL確認 | PASS | `customer/support.html`, `worker/support.html`, `admin/dashboard.html`, `admin/support.html` をProduction Aliasで確認。customer/workerからテスト問い合わせを各1件送信し、管理側で受付内容を確認。DB更新・削除を伴う管理操作は未実施。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし。本番決済・カード登録・正式有料予約受付への導線なし |
 | A案事前登録・β利用希望受付導線確認 | 保留（一部OK） | 公開登録画面は未送信の実ブラウザ確認済み。認証後画面は実ブラウザ確認未実施のため最終判定保留。`worker/screening-test.html`, `admin/users.html`, `admin/workers.html`, `admin/worker-test-submissions.html`, `admin/worker-test-submission-detail.html` と関連JS/APIを静的確認し、対象画面・関連JSに本番決済、カード登録、正式有料予約受付の実行導線は見つからなかった。`/payments/intent`, `/cards/setup-intent`, `/cards`, `/bookings` の書き込み系API呼び出しも対象JSからは見つからなかった |
+| admin詳細リンク404修正後 実ブラウザ再確認 | PASS | Frontend `aed5147 fix: 静的HTMLリンクの404を修正` の本番反映後、Production Aliasで確認。`admin/workers.html` の既存詳細/審査リンクから `worker-detail.html` が正常表示され、`admin/worker-test-submissions.html` の既存詳細リンクから `worker-test-submission-detail.html` が正常表示された。修正前に発生していた404は上記2導線では解消。Console重大エラーなし、Network主要GETは200、意図しないPOST/PUT/PATCH/DELETEは確認されていない。停止、承認/却下、合格/不合格、削除、CSV/Excel出力などの更新・出力系操作は未実施。確認範囲では本番決済、カード登録、正式有料予約受付につながる実行導線なし。ID実値、個人情報、審査回答本文、決済情報、Secret類は記録しない |
 
 ## 残課題
 
@@ -74,7 +75,7 @@
 | メールテンプレート・プッシュ通知・問い合わせ連絡先編集 | β後対応 | `admin/settings.html` の未連携フォームは削除済み。実設定編集API連携は未実装 |
 | 操作ログ検索・CSV出力 | β後対応 | 固定操作ログと未連携CSVボタンは削除済み。実ログ検索/出力は未実装 |
 | Stripe本番決済・本番Webhook確認 | B案前必須 | 2026-07-07 A案では未実施。Live ModeのWebhook delivery、署名検証、本番決済成功/失敗、Webhook反映、領収書確認はB案移行前の残タスク |
-| 認証後の事前登録・β利用希望受付導線 実ブラウザ確認 | A案公開前確認 | コードベース静的確認では大きなNGなし。ただし認証後実画面、Console/Network、共通ナビの誤認リスクは未確認。既存テストアカウントを使い、DB更新・送信・出力操作を避けて読み取り確認する |
+| 認証後の事前登録・β利用希望受付導線 実ブラウザ確認 | 一部確認済み / 継続 | Frontend `aed5147` 本番反映後、adminワーカー詳細/審査提出詳細への既存リンク遷移は実ブラウザでPASSし、404は解消。停止、承認/却下、合格/不合格、削除、CSV/Excel出力などは未実施。worker側の優先度Cリンク、`worker/screening-test.html` の実ブラウザ確認、共通ナビの誤認リスク確認は継続 |
 
 ## Go / No-Go
 
@@ -118,6 +119,7 @@ Stripe本番決済あり運用は、以下を完了した後に **B案Go/No-Go**
 | 2026-07-03 | KAJISHIFT運用担当 | Vercel Production Alias | A案決済関連画面 | OK | `Screenshots/`（証跡用、Git管理対象外） | `customer/payment.html` は「カード登録は準備中」のdisabled表示、カード追加ボタン/カード入力モーダル/カード番号入力欄/カード名義人入力欄/追加ボタンなし。カード登録不可、本番決済・カード登録はセキュリティ対応完了後、問い合わせ・事前登録・β利用希望受付のみ受け付ける旨を表示。`worker/rewards.html` は報酬・精算情報の詳細表示が準備中で、運営から個別案内の趣旨を表示。`admin/payments.html` は決済一覧・売上KPI・報酬精算・キャンセル料管理が実データ連携前、決済状況一覧が準備中、サンプル決済履歴は誤認防止のため非表示と明記。3画面とも本番決済、本番カード登録、正式な有料予約受付、返金・決済確定などの実操作導線なし。主要APIは確認範囲で200、Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし | A案としてOK。Stripe本番決済・本番Webhook確認は未実施のため、B案移行前の必須残タスクとして継続 |
 | 2026-07-03 | KAJISHIFT運用担当 | Vercel Production Alias | A案問い合わせ導線 | OK | `Screenshots/`（証跡用、Git管理対象外） | `customer/support.html` と `worker/support.html` はログイン後に問い合わせフォームを正常表示。件名、問い合わせ種別、返信先メールアドレス、本文を入力でき、テスト問い合わせを各1件送信。送信後に受付完了メッセージを確認し、`POST /api/support` は201。`admin/dashboard.html` では送信済み問い合わせが未対応の問い合わせに表示され、「すべて見る」導線から問い合わせ管理へ進める状態を確認。`admin/support.html` では問い合わせ一覧に送信済み問い合わせが表示され、ステータス新規・未アサイン表示を確認。`対応する`, `自分にアサイン`, `対応開始`, `削除` はDB更新・削除を伴う可能性があるため未押下。Console重大エラーなし、継続的な 500 / 404 / 429 / CORS なし。本番決済、返金、カード登録、正式有料予約受付への導線なし。問い合わせ本文、メール、ID風の値、個人情報、決済情報の実値は本文に記録しない | A案としてOK。Stripe本番決済・本番Webhook確認は未実施のため、B案移行前の必須残タスクとして継続 |
 | 2026-07-06 | KAJISHIFT運用担当 | コードベース静的確認 | A案 事前登録・β利用希望受付導線 | 保留（一部OK） | スクリーンショットなし | 公開登録画面は2026-07-03に未送信の実ブラウザ確認済み。認証後画面は実ブラウザ確認未実施のため、`worker/screening-test.html`, `admin/users.html`, `admin/workers.html`, `admin/worker-test-submissions.html`, `admin/worker-test-submission-detail.html` と関連JS/APIを静的確認。`worker/screening-test.html` はワーカー本人の審査テスト回答/提出状況確認画面、`admin/users.html` は依頼者一覧、`admin/workers.html` はワーカー一覧・審査状態、`admin/worker-test-submissions.html` は審査提出一覧、`admin/worker-test-submission-detail.html` は提出詳細と管理者最終判定画面。対象画面・関連JSに本番決済、カード登録、正式有料予約受付の実行導線は見つからず、`/payments/intent`, `/cards/setup-intent`, `/cards`, `/bookings` の書き込み系API呼び出しも対象JSからは見つからなかった。一方で、審査テスト送信、停止/有効化、新規管理者登録、合格/不合格、CSV/Excel出力は更新・出力系操作として存在するため、本番確認時は押下しない運用が必要。共通ナビに「予約管理」「決済・売上」、ワーカー側に「仕事を探す」「報酬」などの表示があるため、A案期間中の誤認リスクは実ブラウザで確認が必要。静的確認ベースでは大きなNGなし。ただし認証後実ブラウザ確認、Console/Network確認、共通ナビの誤認リスク確認は未実施のため最終判定は保留 | 既存テストアカウントで認証後実ブラウザ読み取り確認を実施。送信、更新、削除、出力、DB作成を伴う操作はしない。個人情報、ID風の値、決済情報、Secret類の実値は記録しない |
+| 2026-07-06 | KAJISHIFT運用担当 | Vercel Production Alias | admin詳細リンク404修正後再確認 | OK | スクリーンショットなし | Frontend `aed5147 fix: 静的HTMLリンクの404を修正` が本番反映された後に実ブラウザで確認。`admin/workers.html` の既存詳細/審査リンクから `worker-detail.html` が正常表示され、`admin/worker-test-submissions.html` の既存詳細リンクから `worker-test-submission-detail.html` が正常表示された。修正前に発生していた404は上記2導線では解消。Console重大エラーなし、Network主要GETは200。意図しないPOST/PUT/PATCH/DELETEは確認されていない。停止、承認/却下、合格/不合格、削除、CSV/Excel出力などの更新・出力系操作は未実施。確認範囲では本番決済、カード登録、正式有料予約受付につながる実行導線なし。個人名、メールアドレス、住所、電話番号、審査回答本文、ID実値、APIキー、Secret、DB接続文字列、決済情報の実値は記録しない | worker側の優先度Cリンクは未対応。認証後画面全体の最終確認として、worker側導線と共通ナビの誤認リスク確認を継続 |
 
 ### Railway 確認
 
@@ -323,7 +325,7 @@ admin要確認項目の原因調査:
 | GitHub Actions / Backup | OK（一部未確認あり） | No | 最新run `#34` はbackup / weekly restore drillともsuccess、artifact 7日保持も確認済み。Node.js 20 warning有無はDashboardログ本文で追加確認 | 本ファイル、GitHub Actions |
 | Stripe | 未確認 | No | Webhook/通知/再送確認 | 本ファイル、Stripe Dashboard |
 | 外部監視・通知 | 未確認 | No | 監視設定とテスト通知を確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
-| 本番主要画面 / 停止UI | OK（一部継続確認あり） | No | customer主要画面は重大NGなし。worker rewardsは2026-07-01再確認で `/api/payments?limit=100` 500と読み込み中残りが再現しないことを確認。admin settingsは2026-07-02再確認で429が再現せずOK。Backend A案反映後、admin dashboard / worker-test-submissions の404も解消。`KajishiftOps`明示確認、停止UIは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
+| 本番主要画面 / 停止UI | OK（一部継続確認あり） | No | customer主要画面は重大NGなし。worker rewardsは2026-07-01再確認で `/api/payments?limit=100` 500と読み込み中残りが再現しないことを確認。admin settingsは2026-07-02再確認で429が再現せずOK。Backend A案反映後、admin dashboard / worker-test-submissions のAPI 404は解消。Frontend `aed5147` 反映後、admin workers詳細/審査リンクとworker-test-submissions詳細リンクの `.html` なしURL起因404も解消。`KajishiftOps`明示確認、停止UI、worker側優先度Cリンクは継続確認 | 本ファイル、`docs/BETA_RELEASE_FINAL_CHECKLIST.md` |
 | DBバックアップ運用 | 継続（一部OK） | No | Railway管理バックアップは未使用。GitHub Actionsで日次backup、週次restore drill、artifact 7日保持を確認。責任者は未確認 | 本ファイル、`docs/BETA_OPERATIONS_RUNBOOK.md` |
 
 ## 2026-06-03 テスト結果

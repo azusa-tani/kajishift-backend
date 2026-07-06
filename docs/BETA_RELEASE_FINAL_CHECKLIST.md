@@ -101,6 +101,24 @@ API確認:
 - `/payments/intent`, `/cards/setup-intent`, `/cards`, `/bookings` の意図しない書き込み系リクエストが発生しないことの実ブラウザNetwork確認。
 - 共通ナビと画面文言のA案期間中の誤認リスク確認。
 
+## 2026-07-06 admin詳細リンク404修正後 実ブラウザ再確認
+
+Frontend commit `aed5147 fix: 静的HTMLリンクの404を修正` の本番反映後、Production Aliasでadmin詳細導線を実ブラウザ確認した。確認者は `KAJISHIFT運用担当`。個人名、メールアドレス、住所、電話番号、審査回答本文、userId、workerId、submissionId、予約ID、APIキー、Secret、DB接続文字列、決済情報の実値は記録しない。URLのID実値は記録せず、既存の詳細リンクから遷移した結果のみ記録する。
+
+| 画面 / 導線 | 判定 | 確認結果 |
+|-------------|------|----------|
+| `admin/workers.html` の既存詳細/審査リンク | OK | 既存リンクから `worker-detail.html` が正常表示された。修正前に発生していた `.html` なしURL起因の404は、この導線では解消 |
+| `admin/worker-test-submissions.html` の既存詳細リンク | OK | 既存リンクから `worker-test-submission-detail.html` が正常表示された。修正前に発生していた `.html` なしURL起因の404は、この導線では解消 |
+
+共通結果:
+
+- Console重大エラーなし。
+- Network主要GETは200。
+- 意図しないPOST/PUT/PATCH/DELETEは確認されていない。
+- 停止、承認/却下、合格/不合格、削除、CSV/Excel出力などの更新・出力系操作は未実施。
+- 確認範囲では、本番決済、カード登録、正式有料予約受付につながる実行導線は見当たらない。
+- worker側の優先度Cリンクは未対応の残課題として残す。
+
 判定区分:
 
 | 判定 | 意味 |
