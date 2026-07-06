@@ -119,6 +119,26 @@ Frontend commit `aed5147 fix: 静的HTMLリンクの404を修正` の本番反�
 - 確認範囲では、本番決済、カード登録、正式有料予約受付につながる実行導線は見当たらない。
 - worker側の優先度Cリンクは未対応の残課題として残す。
 
+## 2026-07-06 worker静的HTMLリンク404修正後 実ブラウザ再確認
+
+Frontend commit `8f32009 fix: worker側の静的HTMLリンク404を修正` はpush済み。Production Aliasでworker側の仕事詳細導線を実ブラウザ確認した。確認者は `KAJISHIFT運用担当`。bookingId、userId、workerId、氏名、メールアドレス、住所、電話番号、審査回答本文、APIキー、Secret、DB接続文字列、決済情報の実値は記録しない。URLのID実値は記録せず、既存リンクから遷移した結果のみ記録する。
+
+| 画面 / 導線 | 判定 | 確認結果 |
+|-------------|------|----------|
+| `worker/jobs.html` の既存仕事詳細リンク | OK | 既存リンクから `worker/job-detail.html` へ遷移でき、静的HTMLリンク起因の404は発生しなかった |
+| `worker/dashboard.html` の既存仕事詳細リンク | OK | 既存リンクから `worker/job-detail.html` へ遷移でき、静的HTMLリンク起因の404は発生しなかった |
+| `worker/job-detail.html` から `worker/chat.html` へのリンク | コード確認済み / 実クリック未確認 | コード上は `.html` 付きに修正済み。ただしPENDING未割当案件では `worker/job-detail.html` 側が403表示となるため、該当導線からの実クリック確認は未完了 |
+| `worker/chat.html` 直接表示 | OK | 既存URL直接入力では正常表示された |
+
+補足:
+
+- PENDING未割当案件から `worker/job-detail.html` を開くと、現行 `GET /api/bookings/:id` のworker権限制御により403となる。
+- この403は静的HTMLリンク修正とは別課題として扱う。
+- 既存 `GET /api/bookings/:id` には詳細住所、依頼者情報、自由記述、決済情報などが含まれ得るため、未承諾workerにそのまま開放するのは避ける。
+- 未承諾workerに案件詳細を見せる場合は、個人情報・詳細住所・決済情報を返さないworker公開案件専用APIの追加を検討する。
+- A案では本番決済・正式有料予約受付は未開放のため、workerの仕事詳細閲覧・承諾導線を公開範囲に含めないなら即No-Goではなく残課題扱いとする。
+- 更新系操作、承諾、送信、DB操作、本番決済、カード登録、正式予約受付操作は未実施。
+
 判定区分:
 
 | 判定 | 意味 |
