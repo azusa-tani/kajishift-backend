@@ -58,6 +58,9 @@
 | A案事前登録・β利用希望受付導線確認 | 保留（一部OK） | 公開登録画面は未送信の実ブラウザ確認済み。認証後画面は実ブラウザ確認未実施のため最終判定保留。`worker/screening-test.html`, `admin/users.html`, `admin/workers.html`, `admin/worker-test-submissions.html`, `admin/worker-test-submission-detail.html` と関連JS/APIを静的確認し、対象画面・関連JSに本番決済、カード登録、正式有料予約受付の実行導線は見つからなかった。`/payments/intent`, `/cards/setup-intent`, `/cards`, `/bookings` の書き込み系API呼び出しも対象JSからは見つからなかった |
 | admin詳細リンク404修正後 実ブラウザ再確認 | PASS | Frontend `aed5147 fix: 静的HTMLリンクの404を修正` の本番反映後、Production Aliasで確認。`admin/workers.html` の既存詳細/審査リンクから `worker-detail.html` が正常表示され、`admin/worker-test-submissions.html` の既存詳細リンクから `worker-test-submission-detail.html` が正常表示された。修正前に発生していた404は上記2導線では解消。Console重大エラーなし、Network主要GETは200、意図しないPOST/PUT/PATCH/DELETEは確認されていない。停止、承認/却下、合格/不合格、削除、CSV/Excel出力などの更新・出力系操作は未実施。確認範囲では本番決済、カード登録、正式有料予約受付につながる実行導線なし。ID実値、個人情報、審査回答本文、決済情報、Secret類は記録しない |
 | worker静的HTMLリンク404修正後 実ブラウザ再確認 | PASS（一部残課題あり） | Frontend `8f32009 fix: worker側の静的HTMLリンク404を修正` はpush済み。Production Aliasで、`worker/jobs.html` と `worker/dashboard.html` の既存リンクから `worker/job-detail.html` へ遷移でき、静的HTMLリンク起因の404は発生しなかった。`worker/job-detail.html` から `worker/chat.html` へのリンクはコード上 `.html` 付きに修正済み。`worker/chat.html` は既存URL直接入力では正常表示を確認。一方で、PENDING未割当案件から `worker/job-detail.html` を開くと、現行 `GET /api/bookings/:id` のworker権限制御により403となる。これは静的HTMLリンク修正とは別課題。既存詳細APIには詳細住所、依頼者情報、自由記述、決済情報などが含まれ得るため、未承諾workerへそのまま開放するのは避け、必要な場合は個人情報・詳細住所・決済情報を返さないworker公開案件専用APIを検討する。更新系操作、承諾、送信、DB操作、本番決済、カード登録、正式予約受付操作は未実施。ID実値、個人情報、決済情報、Secret類は記録しない |
+| A案Frontend誤認防止修正 | PASS（未commit / 未deploy） | ローカルFrontend作業ツリーで、トップ / 利用の流れを `β版受付中`、`事前登録`、`β利用希望`、`お問い合わせ` 中心の文言へ変更し、本番決済・正式予約・カード登録は未開始である注記を追加。依頼者の予約作成、ワーカー選択からの予約確定、予約詳細の決済導線、Stripe.js、カード入力UI、PaymentIntent導線、お気に入りから正式予約へ進む導線、worker側の承諾・辞退・作業完了導線をA案中は停止または準備中表示へ変更。利用規約・特商法ページにβ受付中注記を追加し、共通バナー文言をA案方針に合わせた。実装コードはFrontend側のみで、Backend DB操作・Stripe操作・外部サービス操作は未実施 |
+| A案Frontend実Chrome確認 | PASS（一部残課題あり） | ローカル変更済みFrontendを実Chromeで確認。`index.html`, `flow.html`, `legal.html`, `terms.html`、customer主要画面、worker主要画面を巡回し、`β版受付中`、`事前登録`、`β利用希望`、`お問い合わせ` 中心の導線を確認。`customer/booking.html` で `POST /bookings` は発生せず、`customer/booking-detail.html` でStripe.js / Stripe入力UIは表示されず、`/payments/intent` は発生しなかった。worker側の受注・作業系POST/PATCH/DELETEは発生せず、実Chrome巡回中に本番DB更新・決済系APIのPOST/PUT/PATCH/DELETEは発生しなかった。登録送信、予約作成、予約確定、決済、カード登録、承諾、辞退、作業完了は未実施 |
+| customer favorites API失敗時エラー修正 | PASS（未commit / 未deploy） | `customer/favorites.html` のAPI取得失敗時に存在しないDOMへ `innerHTML` を設定してTypeErrorになる問題を最小修正。API失敗時も画面が落ちず、`お気に入り情報を取得できませんでした` と表示されることを実Chromeで確認。確認中に本番DB更新・決済系APIのPOST/PATCH/DELETE、`/payments/intent` は発生しなかった |
 
 ## 残課題
 
@@ -78,6 +81,10 @@
 | Stripe本番決済・本番Webhook確認 | B案前必須 | 2026-07-07 A案では未実施。Live ModeのWebhook delivery、署名検証、本番決済成功/失敗、Webhook反映、領収書確認はB案移行前の残タスク |
 | 認証後の事前登録・β利用希望受付導線 実ブラウザ確認 | 一部確認済み / 継続 | Frontend `aed5147` 本番反映後、adminワーカー詳細/審査提出詳細への既存リンク遷移は実ブラウザでPASSし、404は解消。停止、承認/却下、合格/不合格、削除、CSV/Excel出力などは未実施。worker側の優先度Cリンク、`worker/screening-test.html` の実ブラウザ確認、共通ナビの誤認リスク確認は継続 |
 | 未承諾workerのPENDING未割当案件詳細403 | 残課題 | worker側の静的HTMLリンク404はFrontend `8f32009` で解消済み。ただしPENDING未割当案件から `worker/job-detail.html` を開くと、現行 `GET /api/bookings/:id` のworker権限制御により403となる。A案でworkerの仕事詳細閲覧・承諾導線を公開範囲に含めない場合は即No-Goではなく残課題扱い。公開範囲に含める場合は、既存詳細APIをそのまま開放せず、個人情報・詳細住所・決済情報を返さないworker公開案件専用APIを検討する |
+| A案Frontend修正の本番反映前確認 | 継続 | ローカル変更済みFrontendではA案の誤認防止修正と実Chrome確認は完了。ただし未commit / 未deployのため、commit、push、Vercel本番反映後にProduction Aliasで再確認が必要 |
+| `customer/select-worker.html` 認証済み画面本体確認 | 継続 | コード上は予約確定停止ガード済みで、確認中に予約確定・DB更新系通信は発生していない。一方で実Chromeのローカル確認では認証済み状態で画面本体到達を完了できていないため、正式公開前または本番反映後に読み取り確認を継続する |
+| 管理画面の予約管理・問い合わせ更新系ボタン | 残課題 | A案Frontend誤認防止修正の対象外。予約管理・問い合わせ管理には更新・削除・出力系ボタンが残るため、A案中は押下しない運用または追加の抑止検討が必要 |
+| A案フラグ配下に残る既存正式機能コード | 継続 | 既存の正式予約、決済、受注系コードはA案フラグ配下で一部残存。A案中は表示・実行抑止済みだが、B案または正式公開前に再点検が必要 |
 
 ## Go / No-Go
 

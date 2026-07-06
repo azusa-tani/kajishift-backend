@@ -139,6 +139,45 @@ Frontend commit `8f32009 fix: worker側の静的HTMLリンク404を修正` はpu
 - A案では本番決済・正式有料予約受付は未開放のため、workerの仕事詳細閲覧・承諾導線を公開範囲に含めないなら即No-Goではなく残課題扱いとする。
 - 更新系操作、承諾、送信、DB操作、本番決済、カード登録、正式予約受付操作は未実施。
 
+## 2026-07-06 A案Frontend誤認防止修正・実Chrome確認
+
+7月7日 A案「本番決済なし限定公開」の観点で、Frontendローカル作業ツリーに誤認防止修正を実施した。確認者は `KAJISHIFT運用担当`。この記録には、個人名、メールアドレス、住所、電話番号、問い合わせ本文、審査回答本文、問い合わせID、userId風の値、workerId、bookingId、予約ID、submissionId、APIキー、Secret、DB接続文字列、決済情報の実値を記録しない。
+
+修正概要:
+
+- `index.html` / `flow.html` は、`β版受付中`、`事前登録`、`β利用希望`、`お問い合わせ` 中心の文言へ変更。
+- 本番決済、正式予約、カード登録は未開始である注記をトップ、利用の流れ、関連ページに追加。
+- `customer/booking.html` の予約作成導線はA案中に停止し、予約作成API `POST /bookings` に進まないようガード。
+- `customer/select-worker.html` / `js/select-worker.js` は、ワーカー選択からの予約確定導線をA案中に停止。
+- `customer/booking-detail.html` / `js/booking-detail.js` は、決済導線、Stripe.js、カード入力UI、PaymentIntent導線をA案中に停止。
+- `customer/favorites.html` は、正式予約へ進む導線をβ利用希望・問い合わせ寄りに変更。
+- `worker/jobs.html`, `worker/dashboard.html`, `worker/job-detail.html` は、承諾、辞退、作業完了導線をA案中に停止または準備中表示へ変更。
+- `legal.html` / `terms.html` は、正式サービス前提の決済・予約・キャンセル料記載にβ受付中注記を追加。
+- `js/auth.js` / `js/config.js` は、共通バナー文言とA案限定公開フラグをA案方針に合わせた。
+
+実Chrome確認結果:
+
+| 対象 | 判定 | 確認結果 |
+|------|------|----------|
+| `index.html`, `flow.html`, `legal.html`, `terms.html` | OK | `β版受付中`、`事前登録`、`β利用希望`、`お問い合わせ` 中心の導線と、本番決済・正式予約未開始の注記を確認 |
+| customer主要画面 | OK（一部残課題あり） | `customer/booking.html` で `POST /bookings` は発生せず、`customer/booking-detail.html` ではStripe.js / Stripe入力UIは表示されず、`/payments/intent` も発生しなかった。`customer/favorites.html` のAPI取得失敗時TypeErrorは追加修正後に解消し、API失敗時も画面が落ちず `お気に入り情報を取得できませんでした` と表示されることを確認 |
+| worker主要画面 | OK（一部残課題あり） | worker側の受注・作業系POST/PATCH/DELETEは発生しなかった。承諾、辞退、作業完了はA案中に停止または準備中表示 |
+| Network | OK | 実Chrome巡回中、本番DB更新・決済系APIのPOST/PUT/PATCH/DELETEは発生していない。`/payments/intent` も発生していない |
+
+未実施:
+
+- 登録送信、予約作成、予約確定、決済、カード登録、承諾、辞退、作業完了、問い合わせ更新・削除、CSV/Excel出力。
+- DB操作、Stripe操作、Railway操作、Cloudflare操作、Webhook再送、外部サービス操作。
+- commit / push / deploy。
+
+残課題:
+
+- `customer/select-worker.html` はコード上予約確定停止ガード済みで、確認中に予約確定・DB更新系通信は発生していない。ただし認証済み状態での画面本体到達確認は未完了。
+- `worker/job-detail.html` の403は既知の残課題。A案でworkerの仕事詳細閲覧・承諾導線を公開範囲に含めない場合は即No-Goではなく残課題扱い。
+- 管理画面の予約管理・問い合わせ更新系ボタンはA案中の残課題。A案期間中は押下しない運用、または追加抑止の検討が必要。
+- 既存正式機能コードはA案フラグ配下で一部残存している。A案中は表示・実行抑止済みだが、正式公開前に再点検する。
+- 本修正はローカルFrontend作業ツリーでの確認であり、未commit / 未deploy。commit、push、Vercel本番反映後にProduction Aliasで再確認する。
+
 判定区分:
 
 | 判定 | 意味 |
