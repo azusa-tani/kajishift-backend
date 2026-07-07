@@ -178,6 +178,48 @@ Frontend commit `8f32009 fix: worker側の静的HTMLリンク404を修正` はpu
 - 既存正式機能コードはA案フラグ配下で一部残存している。A案中は表示・実行抑止済みだが、正式公開前に再点検する。
 - 本修正はローカルFrontend作業ツリーでの確認であり、未commit / 未deploy。commit、push、Vercel本番反映後にProduction Aliasで再確認する。
 
+## 2026-07-07 A案Frontend追加ステータス・通知文言修正 本番反映確認
+
+7月7日 A案「本番決済なし限定公開」の本番画面確認で、依頼者画面の一部に正式予約確定済みに見える文言が残っていたため、Frontendで追加修正を実施し、GitHub `main` とVercel Production Aliasへの反映を確認した。確認者は `KAJISHIFT運用担当`。この記録には、個人名、メールアドレス、住所、電話番号、問い合わせ本文、審査回答本文、問い合わせID、userId風の値、workerId、bookingId、予約ID、submissionId、APIキー、Secret、DB接続文字列、決済情報の実値を記録しない。
+
+追加修正commit:
+
+- Frontend `57fee81 fix: A案向けに予約詳細ステータス文言を調整`
+  - 対象: `js/booking-detail.js`
+  - `customer/booking-detail.html` の `CONFIRMED` 表示を、A案フラグ有効時に `予約確定` ではなく `β確認済み（正式予約は未開始）` と表示するよう調整。
+- Frontend `36c7459 fix: A案向けに依頼者予約ステータス文言を調整`
+  - 対象: `customer/dashboard.html`, `js/customer-bookings.js`
+  - `customer/dashboard.html` の「今後の予約」と `customer/bookings.html` の予約一覧で、A案フラグ有効時に `予約確定` ではなく `β確認済み（正式予約は未開始）` と表示するよう調整。
+- Frontend `d1f1de1 fix: A案向けにダッシュボード通知文言を調整`
+  - 対象: `customer/dashboard.html`
+  - ダッシュボード「お知らせ」欄で、A案フラグ有効時のみ通知タイトル・本文・バッジをA案向け表示に変換。
+  - 変換例: `予約が確定しました` は `β利用希望を確認しました`、個人名入り予約承認通知は `β利用希望の確認状況が更新されました。`、`作業が完了しました` は `β確認ステータスが更新されました`、予約系通知バッジは `β利用希望`。
+
+本番反映確認結果:
+
+| 対象 | 判定 | 確認結果 |
+|------|------|----------|
+| GitHub反映 | OK | `origin/main` が `d1f1de1` を指していることを確認。対象追加commitはいずれもpush済み |
+| Vercel Production deployment | OK | Vercel Production deployment が `d1f1de1` 対象でsuccess。手動deploy / 再deployは未実施 |
+| `customer/booking-detail.html` | OK | `予約確定` は表示されず、`β確認済み（正式予約は未開始）` を表示。本番決済・正式予約未開始の注記も表示 |
+| `customer/dashboard.html` | OK | 「今後の予約」で `β確認済み（正式予約は未開始）` を表示。「お知らせ」欄では、正式予約確定、個人名入り予約承認、作業完了済みに見える通知文言がA案向け汎用文言へ表示上変換されることを確認 |
+| `customer/bookings.html` | OK | 予約一覧で `予約確定` は表示されず、`β確認済み（正式予約は未開始）` を表示 |
+| 決済導線 | OK | Stripe.js、カード入力UI、決済ボタンは表示されず、`/payments/intent` は発生しなかった |
+| Network / Console | OK | 本番DB更新・決済系APIのPOST/PUT/PATCH/DELETEは発生していない。Console重大エラーなし |
+
+未実施:
+
+- 手動deploy、再deploy、DB操作、Stripe操作、Railway操作、Cloudflare操作、Webhook再送、外部サービス操作。
+- 登録送信、予約作成、予約確定、決済、カード登録、承諾、辞退、作業完了、問い合わせ更新・削除。
+- commit / push（Backend docs更新としては未実施）。
+
+残課題:
+
+- 実ユーザーtoken・実通知データでの最終目視確認は、必要に応じて読み取り限定で実施する。
+- 管理画面の更新系ボタン確認は別確認範囲として継続する。
+- `worker/job-detail.html` の403は既知の残課題として継続する。
+- B案移行前には、管理画面アクセス制限、管理者MFA/2FA、管理者ログイン失敗時ロック、脆弱性診断、`/api/admin/*` 追加保護、Stripe本番Webhook・本番決済確認を実施する。
+
 判定区分:
 
 | 判定 | 意味 |

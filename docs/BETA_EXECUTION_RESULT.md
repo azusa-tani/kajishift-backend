@@ -61,6 +61,7 @@
 | A案Frontend誤認防止修正 | PASS（未commit / 未deploy） | ローカルFrontend作業ツリーで、トップ / 利用の流れを `β版受付中`、`事前登録`、`β利用希望`、`お問い合わせ` 中心の文言へ変更し、本番決済・正式予約・カード登録は未開始である注記を追加。依頼者の予約作成、ワーカー選択からの予約確定、予約詳細の決済導線、Stripe.js、カード入力UI、PaymentIntent導線、お気に入りから正式予約へ進む導線、worker側の承諾・辞退・作業完了導線をA案中は停止または準備中表示へ変更。利用規約・特商法ページにβ受付中注記を追加し、共通バナー文言をA案方針に合わせた。実装コードはFrontend側のみで、Backend DB操作・Stripe操作・外部サービス操作は未実施 |
 | A案Frontend実Chrome確認 | PASS（一部残課題あり） | ローカル変更済みFrontendを実Chromeで確認。`index.html`, `flow.html`, `legal.html`, `terms.html`、customer主要画面、worker主要画面を巡回し、`β版受付中`、`事前登録`、`β利用希望`、`お問い合わせ` 中心の導線を確認。`customer/booking.html` で `POST /bookings` は発生せず、`customer/booking-detail.html` でStripe.js / Stripe入力UIは表示されず、`/payments/intent` は発生しなかった。worker側の受注・作業系POST/PATCH/DELETEは発生せず、実Chrome巡回中に本番DB更新・決済系APIのPOST/PUT/PATCH/DELETEは発生しなかった。登録送信、予約作成、予約確定、決済、カード登録、承諾、辞退、作業完了は未実施 |
 | customer favorites API失敗時エラー修正 | PASS（未commit / 未deploy） | `customer/favorites.html` のAPI取得失敗時に存在しないDOMへ `innerHTML` を設定してTypeErrorになる問題を最小修正。API失敗時も画面が落ちず、`お気に入り情報を取得できませんでした` と表示されることを実Chromeで確認。確認中に本番DB更新・決済系APIのPOST/PATCH/DELETE、`/payments/intent` は発生しなかった |
+| A案Frontend追加ステータス・通知文言修正本番反映 | PASS | Frontend `57fee81`, `36c7459`, `d1f1de1` はpush済み。`customer/booking-detail.html`, `customer/dashboard.html`, `customer/bookings.html` で、A案フラグ有効時の `CONFIRMED` 表示が `予約確定` ではなく `β確認済み（正式予約は未開始）` になるよう調整。`customer/dashboard.html` の「お知らせ」欄では、正式予約確定、個人名入り予約承認、作業完了済みに見える通知タイトル・本文・バッジをA案向け汎用文言へ表示上変換するよう調整。GitHub `origin/main` は `d1f1de1` を指し、Vercel Production deployment は `d1f1de1` 対象でsuccess。Production Aliasで、該当3画面のA案文言、本番決済・正式予約未開始バナー、Stripe.js / カード入力UI / 決済ボタンなし、`/payments/intent` なし、本番DB更新・決済系APIのPOST/PUT/PATCH/DELETEなし、Console重大エラーなしを確認。手動deploy / 再deploy、DB操作、Stripe操作、Railway操作、Cloudflare操作、外部サービス操作は未実施。確認者は `KAJISHIFT運用担当`。個人情報、ID実値、Secret類、決済情報の実値は記録しない |
 
 ## 残課題
 
@@ -85,6 +86,8 @@
 | `customer/select-worker.html` 認証済み画面本体確認 | 継続 | コード上は予約確定停止ガード済みで、確認中に予約確定・DB更新系通信は発生していない。一方で実Chromeのローカル確認では認証済み状態で画面本体到達を完了できていないため、正式公開前または本番反映後に読み取り確認を継続する |
 | 管理画面の予約管理・問い合わせ更新系ボタン | 残課題 | A案Frontend誤認防止修正の対象外。予約管理・問い合わせ管理には更新・削除・出力系ボタンが残るため、A案中は押下しない運用または追加の抑止検討が必要 |
 | A案フラグ配下に残る既存正式機能コード | 継続 | 既存の正式予約、決済、受注系コードはA案フラグ配下で一部残存。A案中は表示・実行抑止済みだが、B案または正式公開前に再点検が必要 |
+| 実ユーザーtoken・実通知データでの最終目視確認 | 任意 / 継続 | 追加ステータス・通知文言修正は確認用応答を使ったProduction Alias実Chrome確認でPASS。必要に応じて、実ユーザーtoken・実通知データでも読み取り限定の最終目視確認を行う。登録送信、予約作成、予約確定、決済、カード登録、更新・削除操作は実施しない |
+| B案移行前セキュリティ・決済確認 | B案前必須 | 管理画面アクセス制限、管理者MFA/2FA、管理者ログイン失敗時ロック、脆弱性診断、`/api/admin/*` 追加保護、Stripe本番Webhook・本番決済確認はB案移行前に実施する |
 
 ## Go / No-Go
 
