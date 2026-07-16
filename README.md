@@ -174,16 +174,13 @@ npm run backup:restore-drill -- <backup-file>
 
 ## ドキュメント
 
+- [`docs/README.md`](./docs/README.md) - **現行資料と参照専用資料の案内**
 - [`docs/DATABASE_SETUP.md`](./docs/DATABASE_SETUP.md) - データベースセットアップガイド
 - [`docs/INSTALL_PDFKIT.md`](./docs/INSTALL_PDFKIT.md) - pdfkit・領収書 PDF・日本語フォント
 - [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) - デプロイメントガイド（全プラットフォーム対応）
-- [`docs/RENDER_DEPLOYMENT.md`](./docs/RENDER_DEPLOYMENT.md) - Renderデプロイメント詳細手順書
 - [`docs/DEPLOYMENT_HANDOVER.md`](./docs/DEPLOYMENT_HANDOVER.md) - **デプロイメント作業 引継ぎドキュメント（最新）**
-- [`docs/HANDOVER_PROMPT.md`](./docs/HANDOVER_PROMPT.md) - プロジェクト引継ぎドキュメント
-- [`docs/HANDOVER_COMPLETE.md`](./docs/HANDOVER_COMPLETE.md) - プロジェクト引継ぎ完了ドキュメント
 - [`docs/FRONTEND_INTEGRATION.md`](./docs/FRONTEND_INTEGRATION.md) - フロントエンド連携仕様書
 - [`docs/INTEGRATION_STATUS.md`](./docs/INTEGRATION_STATUS.md) - 連携状況
-- [`docs/REMAINING_TASKS.md`](./docs/REMAINING_TASKS.md) - 残りのタスク一覧
 - [`docs/BETA_OPERATIONS_RUNBOOK.md`](./docs/BETA_OPERATIONS_RUNBOOK.md) - β運用・自動停止・復旧Runbook
 - [`docs/BETA_EXECUTION_RESULT.md`](./docs/BETA_EXECUTION_RESULT.md) - β公開実行結果と証跡
 - [`docs/BETA_RELEASE_GONOGO_CHECKLIST.md`](./docs/BETA_RELEASE_GONOGO_CHECKLIST.md) - Go/No-Goチェックリスト

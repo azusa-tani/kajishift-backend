@@ -209,8 +209,9 @@ KAJISHIFTシステムの全機能を、管理者・依頼者・ワーカーの�
 ## 🔗 関連ドキュメント
 
 - **実装状況**: `docs/INTEGRATION_STATUS.md`
-- **引き継ぎドキュメント**: `docs/HANDOVER_PROMPT.md`
-- **API仕様**: `docs/api-design.md`
+- **現行資料の案内**: `docs/README.md`
+- **API仕様**: `docs/FRONTEND_INTEGRATION.md`
+- **過去の引き継ぎ資料**: `docs/archive/HANDOVER_PROMPT.md`
 - **シードデータ**: `prisma/seed.js`
 
 ---

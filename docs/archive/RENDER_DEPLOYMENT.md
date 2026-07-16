@@ -1,5 +1,7 @@
 # Render デプロイメント手順書
 
+> **参照専用:** 現行の本番BackendはRailwayです。この資料にはRenderとRailwayの表記が混在しているため、現在のデプロイ手順には使用しないでください。現行運用は [BETA_OPERATIONS_RUNBOOK.md](../BETA_OPERATIONS_RUNBOOK.md) と [DEPLOYMENT.md](../DEPLOYMENT.md) を参照してください。
+
 このドキュメントは、KAJISHIFTバックエンドAPIをRenderにデプロイするための詳細な手順を記載しています。
 
 ## 📋 前提条件
@@ -227,8 +229,8 @@ FRONTEND_URL=https://your-frontend-domain.com
 
 ## 📚 関連ドキュメント
 
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - 一般的なデプロイメントガイド
-- [DATABASE_SETUP.md](./DATABASE_SETUP.md) - データベースセットアップガイド
+- [DEPLOYMENT.md](../DEPLOYMENT.md) - 一般的なデプロイメントガイド
+- [DATABASE_SETUP.md](../DATABASE_SETUP.md) - データベースセットアップガイド
 
 ## 🆘 サポート
 

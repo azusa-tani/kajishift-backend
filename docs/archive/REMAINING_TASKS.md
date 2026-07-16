@@ -1,5 +1,7 @@
 # 残りのタスク一覧
 
+> **参照専用:** これは2026年2月時点の実装状況です。現在の機能・公開方針を示す資料としては使用しないでください。現行機能は [FEATURE_LIST.md](../FEATURE_LIST.md)、公開準備は [RELEASE_READINESS_CHECKLIST.md](../RELEASE_READINESS_CHECKLIST.md) を参照してください。
+
 最終更新日: 2026年2月18日（実装完了）
 
 ## 📋 フロントエンド未実装機能

@@ -728,6 +728,6 @@ curl https://api.kajishift.com/api/health
 
 ## 📚 関連ドキュメント
 
-- [HANDOVER_PROMPT.md](./HANDOVER_PROMPT.md) - プロジェクト引継ぎドキュメント
+- [README.md](./README.md) - 現行資料と参照専用資料の案内
 - [DATABASE_SETUP.md](./DATABASE_SETUP.md) - データベースセットアップガイド
-- [HANDOVER_COMPLETE.md](./HANDOVER_COMPLETE.md) - プロジェクト引継ぎ完了ドキュメント
+- [BETA_OPERATIONS_RUNBOOK.md](./BETA_OPERATIONS_RUNBOOK.md) - β運用・停止復旧Runbook

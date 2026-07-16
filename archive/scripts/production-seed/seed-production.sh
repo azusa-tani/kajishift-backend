@@ -1,6 +1,8 @@
 #!/bin/bash
 # 本番データベースにシードデータを投入するスクリプト（Git Bash用）
-# 使用方法: export DATABASE_URL="<YOUR_DATABASE_URL>"; bash scripts/seed-production.sh
+# 参照専用・実行禁止: 現行のβ運用ではProduction DBで npm run seed を実行しません。
+# 現在の方針は docs/BETA_OPERATIONS_RUNBOOK.md の「本番 seed 禁止」を参照してください。
+# 使用方法: export DATABASE_URL="<YOUR_DATABASE_URL>"; bash archive/scripts/production-seed/seed-production.sh
 
 echo "========================================"
 echo "本番データベース シードデータ投入スクリプト"
@@ -20,7 +22,7 @@ if [ -z "$DATABASE_URL" ]; then
     echo "2. kajishift-db（またはkajishift-postgres）を開く"
     echo "3. 「Connections」タブから「Internal Database URL」をコピー"
     echo "4. 以下のコマンドを実行:"
-    echo '   export DATABASE_URL="<コピーしたURL>"; bash scripts/seed-production.sh'
+    echo '   export DATABASE_URL="<コピーしたURL>"; bash archive/scripts/production-seed/seed-production.sh'
     echo ""
     exit 1
 fi

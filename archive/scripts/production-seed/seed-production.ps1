@@ -1,8 +1,10 @@
 # 本番データベースにシードデータを投入するスクリプト（PowerShell用）
+# 参照専用・実行禁止: 現行のβ運用ではProduction DBで npm run seed を実行しません。
+# 現在の方針は docs/BETA_OPERATIONS_RUNBOOK.md の「本番 seed 禁止」を参照してください。
 # 使用方法: 
-#   $env:DATABASE_URL="<YOUR_DATABASE_URL>"; .\scripts\seed-production.ps1
+#   $env:DATABASE_URL="<YOUR_DATABASE_URL>"; .\archive\scripts\production-seed\seed-production.ps1
 # または
-#   .\scripts\seed-production.ps1
+#   .\archive\scripts\production-seed\seed-production.ps1
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "本番データベース シードデータ投入スクリプト" -ForegroundColor Cyan
@@ -24,10 +26,10 @@ if (-not $databaseUrl) {
     Write-Host "2. kajishift-db（またはkajishift-postgres）を開く" -ForegroundColor Yellow
     Write-Host "3. 「Connections」タブから「Internal Database URL」をコピー" -ForegroundColor Yellow
     Write-Host "4. 以下のコマンドを実行:" -ForegroundColor Yellow
-    Write-Host '   $env:DATABASE_URL="<コピーしたURL>"; .\scripts\seed-production.ps1' -ForegroundColor Green
+    Write-Host '   $env:DATABASE_URL="<コピーしたURL>"; .\archive\scripts\production-seed\seed-production.ps1' -ForegroundColor Green
     Write-Host ""
     Write-Host "例:" -ForegroundColor Yellow
-    Write-Host '   $env:DATABASE_URL="postgresql://user:pass@host/db"; .\scripts\seed-production.ps1' -ForegroundColor Green
+    Write-Host '   $env:DATABASE_URL="postgresql://user:pass@host/db"; .\archive\scripts\production-seed\seed-production.ps1' -ForegroundColor Green
     Write-Host ""
     exit 1
 }

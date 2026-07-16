@@ -2,7 +2,7 @@
 
 このドキュメントでは、KAJISHIFTバックエンドAPIのデータベースセットアップ方法を説明します。
 
-> **📚 関連ドキュメント**: プロジェクト全体の情報については [`HANDOVER_PROMPT.md`](./HANDOVER_PROMPT.md) を参照してください。
+> **📚 関連ドキュメント**: 現行資料の入口は [`docs/README.md`](./README.md) を参照してください。
 
 ## 📋 前提条件
 
@@ -358,7 +358,7 @@ curl http://localhost:3000/api/health
      }'
    ```
    
-   詳細は`HANDOVER_PROMPT.md`を参照してください。
+   APIの詳細は [`FRONTEND_INTEGRATION.md`](./FRONTEND_INTEGRATION.md) を参照してください。
 
 3. **データベースの確認**
    ```bash
@@ -369,7 +369,7 @@ curl http://localhost:3000/api/health
 ## 📚 参考資料
 
 ### プロジェクトドキュメント
-- [`HANDOVER_PROMPT.md`](./HANDOVER_PROMPT.md) - プロジェクト全体の引継ぎドキュメント
+- [`README.md`](./README.md) - 現行資料と参照専用資料の案内
 - [`README.md`](../README.md) - プロジェクトの概要とセットアップ手順
 
 ### 外部ドキュメント
@@ -381,4 +381,4 @@ curl http://localhost:3000/api/health
 
 **最終更新**: 2026年3月26日  
 **作成者**: AI Assistant (Cursor)  
-**関連ドキュメント**: [`HANDOVER_PROMPT.md`](./HANDOVER_PROMPT.md)
+**関連ドキュメント**: [`docs/README.md`](./README.md)

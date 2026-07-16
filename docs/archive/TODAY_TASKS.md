@@ -1,5 +1,7 @@
 # 今日（2026年3月2日）の作業タスク
 
+> **参照専用:** これは2026年3月2日時点の作業メモです。完了済みまたは現在と異なる前提を含むため、現在の公開判断には使用しないでください。現行の確認項目は [RELEASE_READINESS_CHECKLIST.md](../RELEASE_READINESS_CHECKLIST.md) を参照してください。
+
 ## 📋 作業概要
 
 フロントエンド・バックエンドの連携状況とデプロイメント状況を確認し、本番環境に向けた残りの作業を整理しました。
@@ -173,8 +175,8 @@ ValidationError: The Express 'trust proxy' setting is true, which allows anyone 
 ## 🔗 参考ドキュメント
 
 - [フロントエンド実装状況](../kajishift-frontend/docs/IMPLEMENTATION_STATUS.md)
-- [バックエンド連携状況](./INTEGRATION_STATUS.md)
-- [デプロイメント引継ぎ](./DEPLOYMENT_HANDOVER.md)
+- [バックエンド連携状況](../INTEGRATION_STATUS.md)
+- [デプロイメント引継ぎ](../DEPLOYMENT_HANDOVER.md)
 - [残りのタスク](./REMAINING_TASKS.md)
 
 ---

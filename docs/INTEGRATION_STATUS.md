@@ -417,5 +417,6 @@
 
 - [フロントエンド連携状況](../kajishift-frontend/INTEGRATION_STATUS.md)
 - [API仕様書](./FRONTEND_INTEGRATION.md)
-- [ハンドオーバードキュメント](./HANDOVER_COMPLETE.md)
+- [現行資料と参照専用資料の案内](./README.md)
+- [過去のハンドオーバードキュメント](./archive/HANDOVER_COMPLETE.md)
 - [動作確認チェックリスト（フロントエンド）](../kajishift-frontend/customer/TEST_CHECKLIST.md)

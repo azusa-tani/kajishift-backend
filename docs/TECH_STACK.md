@@ -321,7 +321,7 @@ KAJISHIFTプロジェクトで採用している技術スタックの一覧で�
 ## 📚 関連ドキュメント
 
 - [`README.md`](../README.md) - プロジェクト概要とセットアップ
-- [`docs/HANDOVER_PROMPT.md`](./HANDOVER_PROMPT.md) - プロジェクト引継ぎドキュメント
+- [`docs/README.md`](./README.md) - 現行資料と参照専用資料の案内
 - [`docs/DEPLOYMENT_HANDOVER.md`](./DEPLOYMENT_HANDOVER.md) - デプロイメント引継ぎドキュメント
 - [`docs/INTEGRATION_STATUS.md`](./INTEGRATION_STATUS.md) - フロントエンド・バックエンド連携状況
 

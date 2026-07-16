@@ -1,5 +1,7 @@
 # 本番データベースにシードデータを投入するスクリプト（シンプル版）
-# 使用方法: $env:DATABASE_URL="<YOUR_DATABASE_URL>"; .\scripts\seed-production-simple.ps1
+# 参照専用・実行禁止: 現行のβ運用ではProduction DBで npm run seed を実行しません。
+# 現在の方針は docs/BETA_OPERATIONS_RUNBOOK.md の「本番 seed 禁止」を参照してください。
+# 使用方法: $env:DATABASE_URL="<YOUR_DATABASE_URL>"; .\archive\scripts\production-seed\seed-production-simple.ps1
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "本番データベース シードデータ投入スクリプト" -ForegroundColor Cyan
@@ -13,7 +15,7 @@ if (-not $env:DATABASE_URL) {
     Write-Host "エラー: DATABASE_URL環境変数が設定されていません" -ForegroundColor Red
     Write-Host ""
     Write-Host "以下のコマンドを実行してください:" -ForegroundColor Yellow
-    Write-Host '  $env:DATABASE_URL="<YOUR_DATABASE_URL>"; .\scripts\seed-production-simple.ps1' -ForegroundColor Green
+    Write-Host '  $env:DATABASE_URL="<YOUR_DATABASE_URL>"; .\archive\scripts\production-seed\seed-production-simple.ps1' -ForegroundColor Green
     Write-Host ""
     exit 1
 }

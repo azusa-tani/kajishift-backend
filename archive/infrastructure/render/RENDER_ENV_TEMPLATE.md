@@ -1,5 +1,7 @@
 # Render 環境変数テンプレート
 
+> **参照専用:** 現行の本番BackendはRailwayです。このテンプレートは過去のRender向け設定例として残しています。現在の環境変数は [docs/BETA_OPERATIONS_RUNBOOK.md](../../../docs/BETA_OPERATIONS_RUNBOOK.md) を参照してください。
+
 このファイルは、Renderでデプロイする際に設定する環境変数のテンプレートです。
 Renderのダッシュボードの「Environment」タブで、以下の環境変数を設定してください。
 
@@ -43,4 +45,4 @@ FRONTEND_URL=https://your-frontend-domain.com
 - `JWT_SECRET`は必ず32文字以上の強力なランダム文字列に設定してください
 - `CORS_ORIGIN`には、フロントエンドのURLを設定してください（例: `https://your-frontend.onrender.com`）
 
-詳細な手順は [`docs/RENDER_DEPLOYMENT.md`](./docs/RENDER_DEPLOYMENT.md) を参照してください。
+詳細な過去手順は [`docs/archive/RENDER_DEPLOYMENT.md`](../../../docs/archive/RENDER_DEPLOYMENT.md) を参照してください。

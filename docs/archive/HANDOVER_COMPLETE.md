@@ -1,5 +1,7 @@
 # KAJISHIFT バックエンドAPI 完全引継ぎドキュメント（統合版）
 
+> **参照専用:** この資料は2026年2月時点の引継ぎ記録です。24h Auto Ops、Stripe β運用、A案公開以降の構成は含みません。現在の構成は [README.md](../../README.md) と [FRONTEND_INTEGRATION.md](../FRONTEND_INTEGRATION.md) を参照してください。
+
 > **注意**: このドキュメントは、HANDOVER.md、HANDOVER_PROMPT.md、HANDOVER_PROMPT_ADDITIONAL_FEATURES.md、HANDOVER_PROMPT_REPORTS_AND_EMAIL.mdを統合した完全版です。古いファイルは削除済みです。
 
 ## 📋 プロジェクト概要

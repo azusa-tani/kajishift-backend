@@ -1,5 +1,7 @@
 # KAJISHIFT API設計書
 
+> **参照専用:** これは初期API設計です。現在の実装と異なるエンドポイント、ロール表記、レスポンス形式を含みます。現在のAPI連携は [FRONTEND_INTEGRATION.md](../FRONTEND_INTEGRATION.md) とSwagger注釈を参照してください。
+
 ## ベースURL
 ```
 http://localhost:3000/api
@@ -200,7 +202,7 @@ DELETE /api/workers/me/unavailable-slots?date=YYYY-MM-DD&slotIndex=0-47
 DELETE /api/workers/me/unavailable-slots/:id
 ```
 
-リクエスト／レスポンスの JSON 例・エラーコード・タイムゾーン契約・DB スキーマは [`WORKER_UNAVAILABLE_SLOTS_API.md`](./WORKER_UNAVAILABLE_SLOTS_API.md) に集約。
+リクエスト／レスポンスの JSON 例・エラーコード・タイムゾーン契約・DB スキーマは [`WORKER_UNAVAILABLE_SLOTS_API.md`](../WORKER_UNAVAILABLE_SLOTS_API.md) に集約。
 
 ### 予約系
 

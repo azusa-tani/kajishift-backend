@@ -1,5 +1,7 @@
 # KAJISHIFT プロジェクト 引き継ぎプロンプト
 
+> **参照専用:** 初期の引継ぎ用プロンプトです。現在の運用・API・公開方針には使用しないでください。現在の構成は [README.md](../../README.md)、API連携は [FRONTEND_INTEGRATION.md](../FRONTEND_INTEGRATION.md) を参照してください。
+
 ## 📋 プロジェクト概要
 
 KAJISHIFTは、家事代行サービスを提供するプラットフォームです。顧客（CUSTOMER）、ワーカー（WORKER）、管理者（ADMIN）の3つのロールを持つWebアプリケーションです。

@@ -1,5 +1,7 @@
 # 本番データベースにシードデータを投入する手順
 
+> **参照専用・実行禁止:** 現行のβ運用ではProduction DBで `npm run seed` を実行しません。この資料は過去の手順を保持するために残しています。現在の方針は [BETA_OPERATIONS_RUNBOOK.md](../BETA_OPERATIONS_RUNBOOK.md) の「本番 seed 禁止」を参照してください。
+
 ## ⚠️ 重要
 
 この手順は**本番データベースの既存データを削除**します。実行前に必ず確認してください。
@@ -39,7 +41,7 @@ $env:DATABASE_URL
 ### ステップ4: シードスクリプトを実行
 
 ```powershell
-.\scripts\seed-production.ps1
+.\archive\scripts\production-seed\seed-production.ps1
 ```
 
 ## 一括実行（推奨）
@@ -47,7 +49,7 @@ $env:DATABASE_URL
 環境変数の設定とスクリプトの実行を1つのコマンドで行う場合：
 
 ```powershell
-$env:DATABASE_URL="postgresql://<user>:<password>@<host>/<database>"; .\scripts\seed-production.ps1
+$env:DATABASE_URL="postgresql://<user>:<password>@<host>/<database>"; .\archive\scripts\production-seed\seed-production.ps1
 ```
 
 ## 実行内容

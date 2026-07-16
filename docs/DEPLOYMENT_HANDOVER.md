@@ -233,7 +233,7 @@ app.set('trust proxy', 1); // 最初のプロキシのみを信頼
    - **問題**: `status=PENDING` かつ `available=true` で取得しても、DB に `workerId: null` の PENDING があっても空配列になるケースがあった
    - **原因（想定）**: クエリ `available` が配列で届くと厳密等価 `=== 'true'` が偽になり、WORKER が「自分に割り当てられた予約」条件のみになっていた。日付 `YYYY-MM-DD` もサーバータイムゾーン依存の解釈で `scheduledDate`（UTC）とずれる可能性があった
    - **対応**: `src/services/bookingService.js` の `getBookings` で `available` / `status` の正規化、`YYYY-MM-DD` を UTC 日境界で比較、未割り当てを `workerId` の `equals: null` で明示
-   - **ドキュメント**: `docs/FRONTEND_INTEGRATION.md`、`docs/INTEGRATION_STATUS.md`、`docs/api-design.md`、`docs/HANDOVER_PROMPT.md`、`docs/HANDOVER_COMPLETE.md`、`README.md` を更新
+   - **ドキュメント**: `docs/FRONTEND_INTEGRATION.md`、`docs/INTEGRATION_STATUS.md`、`docs/archive/api-design.md`、`docs/archive/HANDOVER_PROMPT.md`、`docs/archive/HANDOVER_COMPLETE.md`、`README.md` を更新
 
 ### 優先度: 中
 
@@ -309,8 +309,8 @@ app.set('trust proxy', 1); // 最初のプロキシのみを信頼
 
 ## 📚 関連ドキュメント
 
-- [HANDOVER_PROMPT.md](./HANDOVER_PROMPT.md) - プロジェクト全体の引継ぎドキュメント
-- [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) - Renderデプロイ手順書
+- [docs/README.md](./README.md) - 現行資料と参照専用資料の案内
+- [RENDER_DEPLOYMENT.md](./archive/RENDER_DEPLOYMENT.md) - Renderデプロイ手順書（参照専用）
 - [README_SEED.md](./README_SEED.md) - シードデータ作成方法
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - デプロイメント全般のドキュメント
 

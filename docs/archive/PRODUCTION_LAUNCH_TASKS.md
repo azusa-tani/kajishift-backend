@@ -1,5 +1,7 @@
 # 本番環境Web公開 必須タスクリスト
 
+> **参照専用:** これは2026年3月時点の公開前タスクです。Render前提やStripe未導入時の記述を含みます。現在の公開判断は [RELEASE_READINESS_CHECKLIST.md](../RELEASE_READINESS_CHECKLIST.md)、日常運用は [BETA_OPERATIONS_RUNBOOK.md](../BETA_OPERATIONS_RUNBOOK.md) を参照してください。
+
 **作成日**: 2026年3月6日  
 **目的**: 本番環境をWebに公開するために必ず実施すべきタスクを優先順位付きで整理
 
@@ -325,10 +327,10 @@
 
 ## 🔗 参考ドキュメント
 
-- [デプロイメント引継ぎ](./DEPLOYMENT_HANDOVER.md)
+- [デプロイメント引継ぎ](../DEPLOYMENT_HANDOVER.md)
 - [Renderデプロイメント手順](./RENDER_DEPLOYMENT.md)
-- [データベースセットアップ](./DATABASE_SETUP.md)
-- [実装状況](./IMPLEMENTATION_STATUS.md)
+- [データベースセットアップ](../DATABASE_SETUP.md)
+- [実装状況](../FEATURE_LIST.md)
 
 ---
 

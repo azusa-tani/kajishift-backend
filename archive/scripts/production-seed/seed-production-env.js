@@ -1,7 +1,9 @@
 /**
  * 本番データベースにシードデータを投入するスクリプト
+ * 参照専用・実行禁止: 現行のβ運用ではProduction DBで npm run seed を実行しません。
+ * 現在の方針は docs/BETA_OPERATIONS_RUNBOOK.md の「本番 seed 禁止」を参照してください。
  * 環境変数DATABASE_URLを使用して実行
- * 使用方法: node scripts/seed-production-env.js
+ * 使用方法: node archive/scripts/production-seed/seed-production-env.js
  */
 
 require('dotenv').config();
@@ -17,7 +19,7 @@ if (!process.env.DATABASE_URL) {
   console.log('2. kajishift-db（またはkajishift-postgres）を開く');
   console.log('3. 「Connections」タブから「Internal Database URL」をコピー');
   console.log('4. 以下のコマンドを実行:');
-  console.log('   export DATABASE_URL="<コピーしたURL>"; node scripts/seed-production-env.js');
+  console.log('   export DATABASE_URL="<コピーしたURL>"; node archive/scripts/production-seed/seed-production-env.js');
   console.log('');
   process.exit(1);
 }
