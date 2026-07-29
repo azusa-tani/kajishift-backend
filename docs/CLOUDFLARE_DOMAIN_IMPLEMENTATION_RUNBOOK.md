@@ -1,6 +1,6 @@
 # Cloudflare・独自ドメイン 実操作前Runbook
 
-最終更新: 2026-07-10  
+最終更新: 2026-07-29
 確認者: `KAJISHIFT運用担当`
 
 このRunbookは、A案「本番決済なし限定公開」中に、Cloudflare、DNS、Vercel、管理画面保護の実操作へ進む前に確認すべき項目、手順案、戻し手順、Go/No-Go条件を整理する。
@@ -46,19 +46,12 @@
 リポジトリ内の確認結果:
 
 - Backend側にはCloudflare / 独自ドメイン / 管理保護方針docsが存在する。
-- Frontend側にはVercel静的配信用の `vercel.json` が存在する。
-- `vercel.json` は静的配信用のbuildsとroutesを定義しているが、独自ドメイン向けのredirect、rewrite、headersは確認していない。
-- Frontend側には旧Netlify向けの `_redirects` と `netlify.toml` が残っている。現行運用はVercelを優先し、旧Netlify設定は参考資料として扱う。
-- FrontendのAPI / Socket接続先は `js/config.js`、`js/api.js`、`js/socket.js` で管理されている。
-- `js/config.js` は、ローカル以外では本番Backend公開先をAPI / Socket接続先にする構成である。
-- `js/api.js` は `window.API_BASE_URL` を優先する。
-- `js/socket.js` は `window.SOCKET_SERVER_URL` を優先する。
+- このリポジトリはBackendであり、Frontend実体（`admin/`、`js/`、`vercel.json`、CSS、画像、フォント）は含まれない。Frontendのファイル構成は `docs/FRONTEND_INTEGRATION.md`、`docs/BETA_EXECUTION_RESULT.md` などの既存記録に基づくため、実設定前にFrontendリポジトリまたはVercelの現行Deploymentで再確認する。
+- 既存記録では、FrontendのAPI / Socket接続先は `js/config.js`、`js/api.js`、`js/socket.js` で管理され、`window.API_BASE_URL` と `window.SOCKET_SERVER_URL` が優先される。
+- 既存資料では、FrontendはVercel静的配信用の `vercel.json` を持ち、旧Netlify向け `_redirects` と `netlify.toml` も残ると記録されている。これらの実体はBackendリポジトリ外のため、現行運用で有効なredirect、rewrite、headersはFrontendリポジトリまたはVercelで確認する。
 - BackendのREST API CORSは `CORS_ORIGIN` をカンマ区切りで読み、許可Origin方式で判定している。
 - Socket.io CORSも `CORS_ORIGIN` を参照している。
-- Service Workerは `js/api.js`、`js/config.js`、`service-worker.js` をno-store扱いにしており、切り替え時の古い設定残りを抑える設計がある。
-- Frontendの管理画面は `admin/` 配下にまとまっている。
-- 依頼者画面は `customer/` 配下、ワーカー画面は `worker/` 配下に分離されている。
-- 一般向けトップ、法務、問い合わせ導線、事前登録、β利用希望、サイト確認モニター導線は `/admin/*` とは分けて扱える。
+- 既存記録ではService Workerは `js/api.js`、`js/config.js`、`service-worker.js` をno-store扱いとし、管理画面は `admin/`、依頼者画面は `customer/`、ワーカー画面は `worker/` に分離されている。Access設定前後に、実際のHTMLが参照する `/admin/` 外のJS/CSS/画像/フォントをNetworkで確認する。
 
 ドメイン・DNS:
 
@@ -84,6 +77,10 @@ Cloudflare:
 - MFAを必須にできるか。
 - `/admin/*` だけを対象にできるか。
 - 戻し手順として必要な設定情報。
+- Access Applicationの対象ホスト（要管理画面確認）とパスが `/admin/*` だけであること。`/api/*`、`/uploads/*`、`/socket.io/*`、`/` は対象に含めない。
+- 対象ホストのDNS Proxy状態（橙雲 / DNS only）と、Vercelが指定するDNSレコードの組合せ。
+- SSL/TLSモード、Edge証明書の有効性、Vercel側証明書の発行状態。実値・推奨値は対象ドメインとVercelの案内を確認してから決める。
+- Accessで使用するIdentity Provider（要管理画面確認）、許可対象者の最小集合（メール実値は記録しない）、MFAをどのIdentity Provider設定で強制するか。
 
 Vercel:
 
@@ -96,6 +93,8 @@ Vercel:
 - SSL証明書発行への影響。
 - 独自ドメイン追加後もProduction Aliasが利用できるか。
 - 切り戻し時の操作候補。
+- `vercel.json`、Project Domains、Redirects、Deploymentsに、wwwありからwwwなしへのCloudflare Redirect Ruleと競合する設定がないこと。
+- 管理画面のHTMLが参照する共通静的アセットと、Access適用後もそれらが取得できること。
 
 ## 4. 変更前証跡一覧
 
@@ -112,6 +111,7 @@ docsへ記録してよい要約:
 - SSL/TLSモードの確認済みステータス。
 - Access利用可否。
 - Production Aliasが切り戻し先として利用可能であること。
+- Access Applicationの対象ホスト・パスが `/admin/*` のみである確認結果、Identity Provider / MFA強制方式の確認済み状態、Allowポリシーの最小人数化、未許可ユーザー拒否の確認結果。
 
 内部保管する証跡:
 
@@ -122,6 +122,7 @@ docsへ記録してよい要約:
 - Vercel Domains / Production / Deployments設定画面。
 - Railway VariablesのCORS関連設定。
 - Frontend配信設定、Service Worker、API / Socket接続先の確認結果。
+- 設定前後のBrowser DevTools Network（Access拒否、許可後のHTML、`/admin/` 外アセット、API、Socket.io）の画面。個人情報、トークン、Cookie、ID、Secretはマスクする。
 
 ## 5. 推奨実施順序
 
@@ -224,29 +225,36 @@ docsへ記録してよい要約:
 事前確認:
 
 - Cloudflare Zero Trust / Accessが利用できる。
+- Access Applicationの対象ホストは、wwwなしの正規Frontendホスト（実FQDNは**要管理画面確認**）に限定する。
 - Access対象は `/admin/*` 全体に限定する。
 - 管理者ログイン画面もAccess対象に含める。
 - 一般画面、依頼者画面、ワーカー画面、問い合わせ、事前登録、β利用希望、サイト確認モニター導線は対象外にする。
-- WebhookやAPI全体をAccess対象にしない。
-- 許可ユーザーと未許可ユーザーの確認方法を決める。
-- 管理者本人が入れなくなった場合の戻し手順を用意する。
+- `/api/*`、`/uploads/*`、`/socket.io/*`、WebhookやAPI全体をAccess対象にしない。現行APIとSocket.ioはRailway直URLへ接続する。
+- Allowポリシーは、管理作業に必要な最小人数の許可対象者だけを対象にする。許可対象のメール実値はdocsに記録しない。
+- Identity Providerは**要管理画面確認**。メールワンタイムコードをMFAと同一視せず、選定したIdentity Provider側でMFAを必須化できること、またはAccessで要求するMFA条件を事前に確認する。
+- 許可ユーザー、未許可ユーザー、既存のADMINロールを持つアプリ利用者の各確認方法を決める。
+- 管理者本人が入れなくなった場合、Cloudflare権限を持つ別担当者がAccess ApplicationまたはAllowポリシーを無効化できることを確認する。単独担当者しか復旧できない状態はNo-Goとする。
+- FrontendリポジトリまたはVercelの現行Deploymentで、`/admin/*` のHTMLが参照する `/admin/` 外のJS、CSS、画像、フォント、Service Workerを一覧化する。
 
 手順案:
 
 1. Cloudflare Zero TrustでAccess Applicationを作成する。
-2. Application対象を同一ドメイン配下の `/admin/*` に限定する。
-3. 認証方式を選択する。
-4. MFA必須にできるか確認する。
-5. 許可対象者を最小人数にする。
-6. 未許可ユーザーの拒否動作を確認する。
-7. 一般導線がAccess対象外であることを確認する。
-8. Goの場合のみAccess設定を有効化する。
+2. Applicationの対象ホストを確認済みの正規Frontendホスト、パスを `/admin/*` に設定する。実FQDNは要管理画面確認であり、推測入力しない。
+3. 選定済みIdentity Providerをログイン方法として設定し、そのIdentity ProviderまたはAccessの設定でMFA強制が有効であることを確認する。
+4. Allowポリシーを最小人数の許可対象者に限定する。テスト時に一時的な広い許可ルールを作らない。
+5. 有効化前に設定レビューを行い、ホスト、`/admin/*`、Identity Provider、MFA、Allowポリシー、緊急無効化権限を相互確認する。
+6. Goの場合のみAccess設定を有効化する。
+7. 未許可ユーザーでは、`/admin/login.html` を含む `/admin/*` がAccessで拒否され、管理HTMLへ到達しないことを確認する。
+8. 許可された管理者では、Access認証とMFA完了後に管理者ログイン画面へ到達し、アプリ側JWTログインとADMINロール認可が引き続き必要なことを確認する。
+9. DevTools Networkで、管理HTML、`/admin/` 外の共通静的アセット、`/api/public/status`、`/api/auth/me`、`/api/admin/*`、`/api/notifications/unread-count`、Socket.ioの成否を確認する。更新・削除・出力操作は行わない。
+10. `/`、`/customer/*`、`/worker/*`、公開フォーム、公開status API、WebhookがAccessの認証画面に遷移しないことを確認する。
 
 注意:
 
 - `/api/admin/*` の追加保護ではない。A案中はアプリ側JWT認証とADMINロール認可を継続する。
 - Cloudflare AccessだけではRailway直URLのBackend API対策にならない。
 - `/admin/*` 以外がAccess対象になる可能性がある場合はNo-Go。
+- AccessはFrontend入口の追加保護であり、Railway直URLの`/api/admin/*`にAccess認証を強制するものではない。
 
 ## 10. CORS / Socket.io CORS変更手順案
 
@@ -285,6 +293,8 @@ URL / HTTPS:
 - リダイレクトループがない。
 - HTTPSで表示できる。
 - HSTSは初回では有効化していない。
+- Cloudflareの対象DNSレコードのProxy状態、SSL/TLSモード、Edge証明書とVercel証明書の状態を設定前後で記録し、証明書エラーやHTTPSリダイレクトループがない。
+- wwwありからwwwなしへのRedirect RuleがCloudflare側だけで有効であり、Vercel側のredirect設定と重複していない。
 
 一般導線:
 
@@ -304,6 +314,9 @@ URL / HTTPS:
 - 管理画面 `/admin/*` がCloudflare Access対象になっている。
 - 未許可ユーザーは管理画面へ入れない。
 - 許可された管理者はAccess認証後に管理者ログイン画面へ到達できる。
+- 許可された管理者は、選定済みIdentity ProviderのMFAを完了しない限りAccessを通過できない。
+- 管理HTMLから読み込む `/admin/` 外のJS、CSS、画像、フォント、Service Workerが200で取得でき、Access認証画面や403を返さない。
+- DevTools Networkに、意図しない `/`、`/api/*`、`/socket.io/*` へのAccessリダイレクトがない。
 
 API / Socket / Webhook:
 
@@ -312,6 +325,7 @@ API / Socket / Webhook:
 - 公開status APIが取得できる。
 - Webhookを誤ってAccess対象にしていない。
 - `/api/admin/*` は現行のJWT認証とADMINロール認可を維持している。
+- 管理画面の代表的な読み取り通信（`/api/public/status`、`/api/auth/me`、`/api/admin/*`、`/api/notifications/unread-count`）とSocket.ioが、Access適用前後で成功する。実際に観測したパス・ステータスのみを記録する。
 
 切り戻し:
 
@@ -349,9 +363,10 @@ Redirect Ruleを無効化する場合:
 
 Cloudflare Accessを無効化する場合:
 
-1. `/admin/*` のAccess ApplicationまたはPolicyを無効化する。
-2. 無効化中も管理画面更新系操作は禁止する。
-3. 復旧後にAccess対象パスと許可対象者を再確認する。
+1. 事前に確認したCloudflare管理権限を持つ担当者が、`/admin/*` のAccess ApplicationまたはAllowポリシーを無効化する。
+2. 無効化後、管理者本人がログイン画面まで到達できることだけを読み取り確認する。無効化中も管理画面更新系操作は禁止する。
+3. 原因（対象ホスト/パス、Identity Provider、MFA、Allowポリシー、DNS Proxy、SSL/TLS）を切り分け、設定前証跡と照合する。
+4. 復旧後に、対象パス、許可対象者、MFA、未許可ユーザー拒否、一般導線、静的アセット、API、Socket.ioを再確認する。
 
 CORS設定を戻す場合:
 
@@ -386,6 +401,11 @@ Go条件:
 - 一般導線、公開API、Webhookへの影響が整理されている。
 - A案の公開範囲が変わらない。
 - 実施担当者、実施日時、確認担当者が決まっている。
+- Access Applicationの対象ホストが要管理画面確認の正規Frontendホストに一致し、パスが `/admin/*` のみであることを二者で確認している。
+- Identity Provider、MFA強制方法、最小人数のAllowポリシー、未許可ユーザー確認手順、緊急無効化権限が確認済みである。
+- Frontendの `/admin/` 外アセットと、Access前後のNetwork確認対象が整理されている。
+- Cloudflare Redirect RuleとVercelのDomains / redirect設定の競合がない。
+- DNS Proxy状態とSSL/TLS・証明書状態が確認済みである。
 
 No-Go条件:
 
@@ -399,6 +419,8 @@ No-Go条件:
 - 一般導線、公開API、Webhookへの影響が不明。
 - 正式予約や本番決済が開始済みに見える。
 - 実操作権限や担当者が不明。
+- Accessの対象ホスト、Identity Provider、MFA強制方法、Allowポリシー、緊急無効化担当者のいずれかが未確認。
+- `/admin/` 外アセットの取得、Access前後のNetwork確認、CloudflareとVercelのリダイレクト競合確認、DNS ProxyまたはSSL/TLS状態の確認が未実施。
 
 ## 14. 実操作時に記録する結果欄
 
@@ -418,6 +440,12 @@ No-Go条件:
 | CORS変更要否判断 | 済 / 未 |
 | Socket.io CORS変更要否判断 | 済 / 未 |
 | Access対象パス確認 | 済 / 未 |
+| Access対象ホスト / `/admin/*` 二者確認 | 済 / 未 |
+| Identity Provider / MFA強制方法確認 | 済 / 未 |
+| Allowポリシー最小化 / 緊急無効化権限確認 | 済 / 未 |
+| 未許可ユーザー拒否確認 | 済 / 未 |
+| 共通静的アセット / Network確認 | 済 / 未 |
+| Redirect競合 / DNS Proxy / SSL-TLS確認 | 済 / 未 |
 | 一般導線確認 | 済 / 未 |
 | API / Socket確認 | 済 / 未 |
 | Webhook対象外確認 | 済 / 未 |
@@ -444,3 +472,24 @@ No-Go条件:
 - deploy
 - commit
 - push
+
+## 16. 2026-07-29 独自ドメイン実画面確認
+
+確認対象の正規URLは `https://kajishift.com` とする。確認では既存のテストアカウントを利用したログインと読み取り通信の確認のみを行い、更新、削除、出力、DB操作、外部サービス操作は行わない。個人情報、認証トークン、ID、Secret、決済情報の実値は記録しない。
+
+| 区分 | 確認URL / 画面 | 確認結果 |
+|------|----------------|----------|
+| 依頼者 | `/customer/login.html` | 表示、テストアカウントでのログイン、`/customer/dashboard.html` への遷移、REST API、CORS preflight 200、Socket.io接続、WebSocket 101を確認。重大なConsoleエラーと旧Vercel URLへの意図しない遷移は確認されなかった。 |
+| ワーカー | `/worker/login.html` | 表示、テストアカウントでのログイン、`/worker/dashboard.html` への遷移、REST API、CORS preflight 200、Socket.io接続、WebSocket 101を確認。重大なConsoleエラーと旧Vercel URLへの意図しない遷移は確認されなかった。 |
+| 管理者 | `/admin/login.html` | 表示、管理者アカウントでのログイン、`/admin/dashboard.html` への遷移、管理API通信、CORS preflight 200、Socket.io接続、WebSocket 101を確認。重大なConsoleエラーと旧Vercel URLへの意図しない遷移は確認されなかった。 |
+
+この結果は、独自ドメインからRailway REST APIおよびSocket.ioへの現行接続が動作することを示す。Cloudflare Accessによる管理画面入口保護、管理APIの追加保護、Railway直URL対策の完了を示すものではない。
+
+### 未完了の保護と表示上の注意
+
+- 2026-07-29時点のCloudflare DNSは、`kajishift.com` および `www.kajishift.com` のVercel向けCNAMEがともにDNS onlyであり、Cloudflare HTTPプロキシ、WAF、CDN、Accessは現行通信に適用されていない。
+- Cloudflare Accessを有効にする前に、Access対象ホストをProxiedへ変更する必要がある。変更時はVercel表示、SSL証明書、wwwからwwwなしへの308リダイレクト、Railway REST API、Socket.ioへの影響を確認してからGo/No-Goを判断する。
+- Cloudflare Accessによる `/admin/*` のMFA付き保護は未設定であり、`/admin/login.html` は外部から直接表示可能である。
+- `/api/admin/*` の追加保護およびRailway直URL経由の管理API対策は未完了である。現行のJWT認証、ADMINロール認可、運用ガードは継続する。
+- 現行の管理者ログイン画面には「この管理画面へのアクセスはIP制限・多要素認証で保護されています」と表示される。この文言はCloudflare AccessおよびIP制限の実設定前の現状と一致しないため、保護を有効化するまで実装上の表示リスクとして扱う。
+- 該当表示はFrontendリポジトリ `kajishift-frontend` の `admin/login.html` にあり、ログインフォームの後、既存管理者による管理者登録案内の直前に配置されている。BackendリポジトリにはFrontendファイル実体が含まれないため、正確な行番号はFrontendリポジトリで確認する。
