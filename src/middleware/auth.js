@@ -3,11 +3,17 @@
  */
 
 const jwt = require('jsonwebtoken');
+const prisma = require('../config/database');
+
+const unauthorizedResponse = (res) => res.status(401).json({
+  error: 'Authentication Error',
+  message: '認証トークンが無効です'
+});
 
 /**
  * JWTトークンを検証するミドルウェア
  */
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   try {
     // Authorizationヘッダーからトークンを取得
     const authHeader = req.headers.authorization;
@@ -30,10 +36,30 @@ const authenticate = (req, res, next) => {
 
     // トークンを検証
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
+    req.tokenClaims = decoded;
+
     // リクエストオブジェクトにユーザー情報を追加
     req.user = decoded;
-    
+
+    if (decoded.role === 'ADMIN') {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, role: true, status: true }
+      });
+
+      if (!currentUser || currentUser.status !== 'ACTIVE' || currentUser.role !== 'ADMIN') {
+        return unauthorizedResponse(res);
+      }
+
+      req.user = {
+        ...decoded,
+        id: currentUser.id,
+        role: currentUser.role,
+        status: currentUser.status
+      };
+    }
+
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
